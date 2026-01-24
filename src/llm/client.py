@@ -27,8 +27,32 @@ class LLMClient:
             return
 
         try:
-            self.client = OpenAI(api_key=api_key)
-            LoggerManager.info("LLM 客户端初始化成功")
+            # 获取提供商配置
+            provider = self.config.get_llm_provider()
+            base_url = self.config.get_llm_base_url()
+            site_url = self.config.get_llm_site_url()
+            site_name = self.config.get_llm_site_name()
+
+            # 构建客户端参数
+            client_params = {"api_key": api_key}
+            
+            # 如果是 OpenRouter，设置 base_url 和自定义头
+            if provider == "openrouter":
+                if base_url:
+                    client_params["base_url"] = base_url
+                
+                # 设置自定义头用于 OpenRouter 排名
+                default_headers = {}
+                if site_url:
+                    default_headers["HTTP-Referer"] = site_url
+                if site_name:
+                    default_headers["X-Title"] = site_name
+                
+                if default_headers:
+                    client_params["default_headers"] = default_headers
+
+            self.client = OpenAI(**client_params)
+            LoggerManager.info(f"LLM 客户端初始化成功 (provider: {provider})")
         except Exception as e:
             LoggerManager.error(f"LLM 客户端初始化失败: {str(e)}")
             self.client = None
@@ -64,6 +88,7 @@ class LLMClient:
             )
 
             result = response.choices[0].message.content
+            LoggerManager.debug(f"LLM 响应内容: {result}")
             LoggerManager.debug(f"LLM 响应长度: {len(result)}")
 
             return result

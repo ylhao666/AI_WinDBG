@@ -30,6 +30,8 @@ class SessionManager:
         self.command_history: List[str] = []
         self.session_start_time = datetime.now()
         self.metadata: Dict = {}
+        self.session_active = False
+        self.session_pid: Optional[int] = None
 
     def set_state(self, state: SessionState):
         """设置会话状态"""
@@ -53,6 +55,23 @@ class SessionManager:
         """转储加载完成"""
         self.set_state(SessionState.READY)
         LoggerManager.info("转储文件加载完成")
+
+    def set_session_active(self, active: bool, pid: Optional[int] = None):
+        """设置 cdb 会话状态"""
+        self.session_active = active
+        self.session_pid = pid
+        if active:
+            LoggerManager.info(f"cdb 会话已激活 (PID: {pid})")
+        else:
+            LoggerManager.info("cdb 会话已关闭")
+
+    def is_session_active(self) -> bool:
+        """检查 cdb 会话是否活跃"""
+        return self.session_active
+
+    def get_session_pid(self) -> Optional[int]:
+        """获取 cdb 会话 PID"""
+        return self.session_pid
 
     def set_display_mode(self, mode: DisplayMode):
         """设置显示模式"""
@@ -116,7 +135,9 @@ class SessionManager:
             "session_duration": (datetime.now() - self.session_start_time).total_seconds(),
             "output_count": len(self.output_history),
             "command_count": len(self.command_history),
-            "metadata": self.metadata
+            "metadata": self.metadata,
+            "session_active": self.session_active,
+            "session_pid": self.session_pid
         }
 
     def reset(self):
@@ -128,4 +149,6 @@ class SessionManager:
         self.command_history = []
         self.session_start_time = datetime.now()
         self.metadata = {}
+        self.session_active = False
+        self.session_pid = None
         LoggerManager.info("会话已重置")

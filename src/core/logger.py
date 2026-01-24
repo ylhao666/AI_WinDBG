@@ -33,8 +33,11 @@ class LoggerManager:
 
     def _setup_logger(self):
         """设置日志"""
-        self._logger = logging.getLogger("ai_windbg")
-        self._logger.setLevel(getattr(logging, self.config.get_log_level()))
+        LoggerManager._logger = logging.getLogger("ai_windbg")
+        
+        # 如果启用了调试模式，使用 DEBUG 级别
+        log_level = "DEBUG" if self.config.is_debug() else self.config.get_log_level()
+        LoggerManager._logger.setLevel(getattr(logging, log_level))
 
         formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -43,9 +46,9 @@ class LoggerManager:
 
         # 控制台处理器
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
+        console_handler.setLevel(log_level)
         console_handler.setFormatter(formatter)
-        self._logger.addHandler(console_handler)
+        LoggerManager._logger.addHandler(console_handler)
 
         # 文件处理器
         log_file = self.config.get_log_file()
@@ -58,9 +61,9 @@ class LoggerManager:
             backupCount=self.config.get("logging.backup_count", 5),
             encoding="utf-8"
         )
-        file_handler.setLevel(getattr(logging, self.config.get_log_level()))
+        file_handler.setLevel(getattr(logging, log_level))
         file_handler.setFormatter(formatter)
-        self._logger.addHandler(file_handler)
+        LoggerManager._logger.addHandler(file_handler)
 
     @classmethod
     def get_logger(cls, config: Optional[ConfigManager] = None) -> logging.Logger:

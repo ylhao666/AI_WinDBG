@@ -114,6 +114,41 @@ class CommandMapper:
 
     def _is_natural_language(self, text: str) -> bool:
         """判断是否是自然语言输入"""
-        # 简单判断：包含中文或英文单词
+        text = text.strip()
+        
+        # 如果以 ! 或 . 开头，认为是 WinDBG 命令
+        if text.startswith('!') or text.startswith('.'):
+            return False
+        
+        # 如果包含中文，认为是自然语言
         chinese_chars = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
-        return chinese_chars > 0 or ' ' in text
+        if chinese_chars > 0:
+            return True
+        
+        # 定义常见的 WinDBG 命令
+        common_commands = {
+            'k', 'kv', 'kp', 'kn', 'kb',  # 调用栈
+            'lm', 'lmv', 'lmi',  # 模块
+            '~', '~*', '~.',  # 线程
+            'r',  # 寄存器
+            'u', 'uf', 'ub',  # 反汇编
+            'dt', 'dds', 'dps',  # 符号
+            'eb', 'ed', 'ea',  # 编辑内存
+            'db', 'dw', 'dd', 'dq',  # 显示内存
+            's', 'sa',  # 搜索
+            '.effmach', '.frame', '.symopt',  # 点命令
+            '.exr', '.reload', '.sympath',  # 更多点命令
+            '!analyze', '!heap', '!handle',  # 感叹号命令
+        }
+        
+        # 如果是单个单词，检查是否是常见命令
+        if ' ' not in text:
+            return text.lower() not in common_commands
+        
+        # 如果包含空格，检查第一部分是否是命令
+        parts = text.split()
+        if parts[0].lower() in common_commands:
+            return False
+        
+        # 其他情况，认为是自然语言
+        return True

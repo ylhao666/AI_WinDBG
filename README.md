@@ -7,6 +7,7 @@
 ### 核心功能
 
 - **WinDBG 集成**: 完整集成 WinDBG 调试引擎，支持加载和分析崩溃转储文件
+- **持久会话**: 保持 cdb 调试会话持续活跃，避免每次命令都重新加载 dump 文件，大幅提升调试效率
 - **自然语言交互**: 支持使用自然语言描述调试需求，自动生成对应的 WinDBG 命令
 - **智能分析**: 基于 LLM 的智能分析功能，自动生成结构化的崩溃分析报告
 - **双模式显示**: 支持原始输出和智能分析两种显示模式
@@ -18,6 +19,7 @@
 - **异步处理**: 支持异步命令执行，提高响应速度
 - **缓存机制**: LLM 响应缓存，减少 API 调用次数
 - **安全验证**: 命令安全验证，防止恶意命令执行
+- **持久会话管理**: 使用 Popen 和线程管理 cdb 进程，实现命令在同一调试会话中连续执行
 
 ## 安装
 
@@ -25,7 +27,7 @@
 
 - Python 3.10 或更高版本
 - WinDBG (cdb.exe) - 用于调试转储文件
-- OpenAI API Key (可选) - 用于智能分析功能
+- LLM API Key (可选) - 用于智能分析功能（推荐使用 OpenRouter）
 
 ### 安装步骤
 
@@ -50,10 +52,14 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-编辑 `.env` 文件，设置 OpenAI API Key：
+编辑 `.env` 文件，设置 LLM API Key：
 
 ```env
-OPENAI_API_KEY=your_openai_api_key_here
+# 推荐使用 OpenRouter（支持多种模型）
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+
+# 或者使用 OpenAI 直接访问
+# OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 4. 运行应用
@@ -80,6 +86,8 @@ python main.py
 文件路径> C:\path\to\crash.dmp
 ```
 
+加载成功后，系统会自动启动 cdb 持久会话，所有后续命令将在同一会话中执行，无需重新加载 dump 文件。
+
 3. **执行命令**
 
 #### 使用自然语言
@@ -97,6 +105,21 @@ python main.py
 > kv
 > .exr -1
 ```
+
+### 持久会话特性
+
+本应用采用持久会话机制，具有以下优势：
+
+- **快速响应**: 首次加载 dump 文件后，后续命令无需重新加载，执行速度大幅提升
+- **状态保持**: cdb 会话保持活跃，可以连续执行多个命令，保持调试上下文
+- **资源优化**: 避免频繁启动和关闭 cdb 进程，减少系统资源消耗
+- **实时输出**: 命令执行时实时显示输出，无需等待命令完成，提供更好的交互体验
+- **会话管理**: 使用 `status` 命令可查看当前 cdb 会话状态和进程 ID
+
+**注意事项**:
+- 加载新的 dump 文件会自动关闭当前会话并启动新会话
+- 退出应用时会自动关闭 cdb 会话
+- 如果 cdb 会话意外终止，下次执行命令时会自动重启会话
 
 ### 显示模式
 
@@ -118,9 +141,9 @@ python main.py
 |------|------|
 | `help` | 显示帮助信息 |
 | `clear` | 清屏 |
-| `status` | 显示当前状态 |
+| `status` | 显示当前状态（包括 cdb 会话状态和进程 ID） |
 | `mode <raw|smart|both>` | 切换显示模式 |
-| `exit` | 退出程序 |
+| `exit` | 退出程序（自动关闭 cdb 会话） |
 
 ### 自然语言示例
 
@@ -158,13 +181,26 @@ windbg:
 
 ```yaml
 llm:
-  provider: "openai"
-  model: "gpt-4"
-  api_key: "${OPENAI_API_KEY}"
+  provider: "openrouter"
+  model: "openai/gpt-4"
+  api_key: "${OPENROUTER_API_KEY}"
+  base_url: "https://openrouter.ai/api/v1"
+  site_url: "https://github.com/yourusername/ai-windbg"
+  site_name: "AI WinDBG"
   max_tokens: 2000
   temperature: 0.3
   timeout: 60
 ```
+
+**支持的 LLM 提供商**:
+
+- **OpenRouter** (推荐): 支持多种模型，包括 OpenAI、Anthropic、Google 等
+  - 模型格式: `openai/gpt-4`, `anthropic/claude-3-opus`, `google/gemini-pro` 等
+  - 优势: 统一 API、自动回退、成本优化
+  
+- **OpenAI**: 直接使用 OpenAI API
+  - 模型格式: `gpt-4`, `gpt-3.5-turbo` 等
+  - 需要设置 `provider: "openai"` 和 `api_key: "${OPENAI_API_KEY}"`
 
 ### CLI 配置
 
@@ -225,11 +261,17 @@ A: 请确保已安装 WinDBG，并在 `config.yaml` 中配置正确的路径，�
 
 ### Q: LLM 功能不可用
 
-A: 请确保已配置有效的 OpenAI API Key，并检查网络连接。
+A: 请确保已配置有效的 LLM API Key（OpenRouter 或 OpenAI），并检查网络连接。
+
+### Q: 如何切换 LLM 提供商？
+
+A: 编辑 `config.yaml` 文件中的 `llm.provider` 配置：
+- 使用 OpenRouter: `provider: "openrouter"`，并设置 `OPENROUTER_API_KEY`
+- 使用 OpenAI: `provider: "openai"`，并设置 `OPENAI_API_KEY`
 
 ### Q: 智能分析失败
 
-A: 检查 OpenAI API Key 是否有效，以及是否有足够的 API 配额。
+A: 检查 LLM API Key 是否有效，以及是否有足够的 API 配额。如果使用 OpenRouter，请确保模型名称格式正确（如 `openai/gpt-4`）。
 
 ## 贡献
 

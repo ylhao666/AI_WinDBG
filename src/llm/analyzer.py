@@ -36,7 +36,7 @@ class SmartAnalyzer:
                 cached = self.cache.get(raw_output)
                 if cached:
                     LoggerManager.debug("使用缓存的分析结果")
-                    return AnalysisReport(**cached)
+                    return AnalysisReport.from_dict(cached)
 
             # 生成分析提示
             prompt = self.templates.format_crash_analysis(command, raw_output)
@@ -51,7 +51,7 @@ class SmartAnalyzer:
 
             # 缓存结果
             if use_cache and self.cache:
-                self.cache.set(raw_output, report.__dict__)
+                self.cache.set(raw_output, report.to_dict())
 
             LoggerManager.info("智能分析完成")
 

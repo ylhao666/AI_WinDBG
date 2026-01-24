@@ -53,3 +53,38 @@ class AnalysisReport:
     raw_output: str = ""
     timestamp: datetime = field(default_factory=datetime.now)
     command: str = ""
+
+    def to_dict(self) -> dict:
+        """转换为可序列化的字典"""
+        result = {}
+        for key, value in self.__dict__.items():
+            if isinstance(value, datetime):
+                result[key] = value.isoformat()
+            elif isinstance(value, list):
+                result[key] = [item.__dict__ if hasattr(item, '__dict__') else item for item in value]
+            elif hasattr(value, '__dict__'):
+                result[key] = value.__dict__
+            else:
+                result[key] = value
+        return result
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'AnalysisReport':
+        """从字典创建 AnalysisReport 对象"""
+        data = data.copy()
+        
+        if 'timestamp' in data and isinstance(data['timestamp'], str):
+            data['timestamp'] = datetime.fromisoformat(data['timestamp'])
+        
+        if 'call_stack' in data and isinstance(data['call_stack'], list):
+            data['call_stack'] = [StackFrame(**item) if isinstance(item, dict) else item for item in data['call_stack']]
+        
+        if 'modules' in data and isinstance(data['modules'], list):
+            data['modules'] = [ModuleInfo(**item) if isinstance(item, dict) else item for item in data['modules']]
+        
+        if 'exception_info' in data and isinstance(data['exception_info'], dict):
+            data['exception_info'] = ExceptionInfo(**data['exception_info'])
+        elif 'exception_info' in data and data['exception_info'] is None:
+            data['exception_info'] = None
+        
+        return cls(**data)

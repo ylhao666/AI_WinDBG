@@ -161,37 +161,44 @@ class DisplayManager:
 
     def print_help(self):
         """打印帮助信息"""
-        help_text = """
-[bold yellow]可用命令:[/bold yellow]
+        from rich.align import Align
+        from rich.columns import Columns
 
-[green]自然语言命令:[/green]
-  帮我分析崩溃              - 执行崩溃分析
-  查看调用栈                - 显示调用栈
-  查看异常                  - 显示异常信息
-  查看模块                  - 显示加载的模块
-  查看线程                  - 显示线程信息
+        help_content = [
+            ("[bold yellow]自然语言命令:[/bold yellow]", [
+                "  帮我分析崩溃              - 执行崩溃分析",
+                "  查看调用栈                - 显示调用栈",
+                "  查看异常                  - 显示异常信息",
+                "  查看模块                  - 显示加载的模块",
+                "  查看线程                  - 显示线程信息"
+            ]),
+            ("[bold yellow]WinDBG 命令:[/bold yellow]", [
+                "  !analyze -v              - 详细崩溃分析",
+                "  k / kv                   - 查看调用栈",
+                "  .exr -1                  - 查看异常记录",
+                "  lm                       - 查看模块列表",
+                "  ~                        - 查看线程信息"
+            ]),
+            ("[bold yellow]系统命令:[/bold yellow]", [
+                "  mode <raw|smart|both>    - 切换显示模式",
+                "  clear                    - 清屏",
+                "  help                     - 显示帮助",
+                "  exit / quit              - 退出程序"
+            ]),
+            ("[bold yellow]快捷键:[/bold yellow]", [
+                "  Tab                      - 切换显示模式",
+                "  F1                       - 显示帮助",
+                "  F2                       - 显示状态",
+                "  Ctrl+L                   - 清屏",
+                "  Ctrl+C                   - 退出"
+            ])
+        ]
 
-[green]WinDBG 命令:[/green]
-  !analyze -v              - 详细崩溃分析
-  k / kv                   - 查看调用栈
-  .exr -1                  - 查看异常记录
-  lm                       - 查看模块列表
-  ~                        - 查看线程信息
-
-[green]系统命令:[/green]
-  mode <raw|smart|both>    - 切换显示模式
-  clear                    - 清屏
-  help                     - 显示帮助
-  exit / quit              - 退出程序
-
-[green]快捷键:[/green]
-  Tab                      - 切换显示模式
-  F1                       - 显示帮助
-  F2                       - 显示状态
-  Ctrl+L                   - 清屏
-  Ctrl+C                   - 退出
-"""
-        self.console.print(Markdown(help_text))
+        for title, commands in help_content:
+            self.console.print(title)
+            for cmd in commands:
+                self.console.print(f"[green]{cmd}[/green]")
+            self.console.print()
 
     def _add_to_buffer(self, output: str):
         """添加输出到缓冲区"""

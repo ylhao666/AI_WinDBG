@@ -1,7 +1,15 @@
 """CLI 界面主控制器"""
 
 import sys
+import re
+import time
 from typing import Optional
+
+try:
+    import msvcrt
+    HAS_MSVCRT = True
+except ImportError:
+    HAS_MSVCRT = False
 
 from src.core.config import ConfigManager
 from src.core.session import SessionManager, SessionState
@@ -51,7 +59,21 @@ class CLIInterface:
         default_mode = self.config.get_default_display_mode()
         self.session.set_display_mode(DisplayMode(default_mode))
 
+        # 设置实时输出回调
+        self.windbg.set_output_callback(self._real_time_output)
+
         LoggerManager.info("CLI 界面初始化完成")
+
+    def _real_time_output(self, line: str):
+        """实时输出回调函数"""
+        # 过滤掉提示符行
+        if re.search(r'^\d+:\d+>', line.strip()) or re.search(r'^\d+:\s*kd>', line.strip()):
+            return
+        # 过滤空行
+        if not line.strip():
+            return
+        # 使用 rich 打印输出，保持简单的格式
+        self.display.console.print(line, end='', highlight=False)
 
     def run(self):
         """运行主循环"""
@@ -105,7 +127,13 @@ class CLIInterface:
                 if self.windbg.load_dump(filepath):
                     self.session.load_dump(filepath)
                     self.session.dump_loaded()
+                    
+                    # 更新会话状态
+                    if self.windbg._process:
+                        self.session.set_session_active(True, self.windbg._process.pid)
+                    
                     self.display.print_success(f"成功加载转储文件: {filepath}")
+                    self.display.print_info("cdb 会话已启动，命令将在同一会话中执行")
                     self.display.print_info("输入 'help' 查看可用命令")
                     return True
                 else:
@@ -118,11 +146,98 @@ class CLIInterface:
                 self.display.print_error(f"加载转储文件时发生错误: {str(e)}")
                 LoggerManager.error(f"加载转储文件错误: {str(e)}", exc_info=True)
 
+    def _get_input_with_hotkeys(self) -> Optional[str]:
+        """获取用户输入，支持快捷键"""
+        if not HAS_MSVCRT:
+            return input("> ").strip()
+
+        prompt = "> "
+        print(prompt, end='', flush=True)
+        
+        input_buffer = []
+        while True:
+            if msvcrt.kbhit():
+                ch = msvcrt.getwch()
+                
+                # 处理功能键
+                if ch == '\x00' or ch == '\xe0':
+                    # 功能键前缀
+                    ch2 = msvcrt.getwch()
+                    
+                    # F1
+                    if ch2 == ';':
+                        print('\r' + ' ' * len(prompt) + '\r', end='', flush=True)
+                        self.display.print_help()
+                        print(prompt, end='', flush=True)
+                        input_buffer = []
+                    # F2
+                    elif ch2 == '<':
+                        print('\r' + ' ' * len(prompt) + '\r', end='', flush=True)
+                        self.show_status()
+                        print(prompt, end='', flush=True)
+                        input_buffer = []
+                    # Tab - 切换显示模式
+                    elif ch2 == '\t':
+                        print('\r' + ' ' * len(prompt) + '\r', end='', flush=True)
+                        self.session.toggle_display_mode()
+                        self.display.print_success(f"已切换到 {self.session.get_display_mode().value} 模式")
+                        print(prompt, end='', flush=True)
+                        input_buffer = []
+                    # Enter - 提交命令
+                    elif ch2 == '\r':
+                        print()
+                        return ''.join(input_buffer).strip()
+                    # Backspace
+                    elif ch2 == '\x08':
+                        if input_buffer:
+                            input_buffer.pop()
+                            print('\b \b', end='', flush=True)
+                    # Ctrl+L - 清屏
+                    elif ch2 == '\x0c':
+                        print('\r' + ' ' * len(prompt) + '\r', end='', flush=True)
+                        self.display.clear_screen()
+                        print(prompt, end='', flush=True)
+                        input_buffer = []
+                    # Ctrl+C - 退出
+                    elif ch2 == '\x03':
+                        print('^C')
+                        raise KeyboardInterrupt
+                # Tab - 切换显示模式
+                elif ch == '\t':
+                    print('\r' + ' ' * len(prompt) + '\r', end='', flush=True)
+                    self.session.toggle_display_mode()
+                    self.display.print_success(f"已切换到 {self.session.get_display_mode().value} 模式")
+                    print(prompt, end='', flush=True)
+                    input_buffer = []
+                # Enter - 提交命令
+                elif ch == '\r':
+                    print()
+                    return ''.join(input_buffer).strip()
+                # Backspace
+                elif ch == '\x08':
+                    if input_buffer:
+                        input_buffer.pop()
+                        print('\b \b', end='', flush=True)
+                # Ctrl+L - 清屏
+                elif ch == '\x0c':
+                    print('\r' + ' ' * len(prompt) + '\r', end='', flush=True)
+                    self.display.clear_screen()
+                    print(prompt, end='', flush=True)
+                    input_buffer = []
+                # Ctrl+C - 退出
+                elif ch == '\x03':
+                    print('^C')
+                    raise KeyboardInterrupt
+                # 普通字符（包括中文）
+                elif ord(ch) >= 32 or ord(ch) > 127:
+                    input_buffer.append(ch)
+                    print(ch, end='', flush=True)
+
     def command_flow(self):
         """命令处理流程"""
         while True:
             try:
-                user_input = input("> ").strip()
+                user_input = self._get_input_with_hotkeys()
 
                 if not user_input:
                     continue
@@ -185,18 +300,17 @@ class CLIInterface:
                 self.process_natural_language(user_input)
                 return
 
-            # 执行 WinDBG 命令
+            # 执行 WinDBG 命令（输出已通过回调实时打印）
             result = self.executor.execute(user_input)
 
-            # 显示结果
+            # 等待一小段时间，确保所有输出都已打印
+            time.sleep(0.2)
+
+            # 显示结果（实时输出已打印，这里只处理智能分析）
             mode = self.session.get_display_mode()
-            if mode == DisplayMode.RAW:
-                self.display.print_raw_output(result.output)
-            elif mode == DisplayMode.SMART:
-                self.display.print_raw_output(result.output)
+            if mode == DisplayMode.SMART:
                 self.process_smart_analysis(result.output, user_input)
-            else:  # BOTH mode
-                self.display.print_raw_output(result.output)
+            elif mode == DisplayMode.BOTH:
                 self.process_smart_analysis(result.output, user_input)
 
             # 添加到输出历史
@@ -222,18 +336,17 @@ class CLIInterface:
             # 显示生成的命令
             self.display.print_info(f"生成的命令: {command} (置信度: {confidence:.2%})")
 
-            # 执行命令
+            # 执行命令（输出已通过回调实时打印）
             result = self.executor.execute(command)
 
-            # 显示结果
+            # 等待一小段时间，确保所有输出都已打印
+            time.sleep(0.2)
+
+            # 显示结果（实时输出已打印，这里只处理智能分析）
             mode = self.session.get_display_mode()
-            if mode == DisplayMode.RAW:
-                self.display.print_raw_output(result.output)
-            elif mode == DisplayMode.SMART:
-                self.display.print_raw_output(result.output)
+            if mode == DisplayMode.SMART:
                 self.process_smart_analysis(result.output, command)
-            else:  # BOTH mode
-                self.display.print_raw_output(result.output)
+            elif mode == DisplayMode.BOTH:
                 self.process_smart_analysis(result.output, command)
 
             # 添加到输出历史
@@ -281,16 +394,27 @@ class CLIInterface:
 
     def show_status(self):
         """显示当前状态"""
+        session_info = self.windbg.get_session_info()
         status = {
             'mode': self.session.get_display_mode().value,
             'dump_file': self.session.dump_file or '未加载',
-            'session_active': self.session.get_state().value
+            'session_active': self.session.get_state().value,
+            'windbg_session': '活跃' if session_info.get('is_session_active') else '未激活',
+            'windbg_pid': session_info.get('is_session_active') and self.windbg._process and self.windbg._process.pid or 'N/A'
         }
         self.display.print_status(status)
 
     def shutdown(self):
         """关闭应用"""
         self.display.print_info("正在关闭...")
+        
+        # 关闭 cdb 会话
+        if self.windbg.is_session_active():
+            self.display.print_info("正在关闭 cdb 会话...")
+        
         self.windbg.close()
+        self.session.set_session_active(False, None)
+        
+        # 保存历史
         self.history.save_to_file()
         LoggerManager.info("应用已关闭")
