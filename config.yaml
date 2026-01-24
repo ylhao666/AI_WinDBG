@@ -1,0 +1,53 @@
+# 应用配置
+app:
+  name: "AI WinDBG 崩溃分析器"
+  version: "0.1.0"
+  debug: false
+
+# WinDBG 配置
+windbg:
+  path: "C:\\Program Files (x86)\\Windows Kits\\10\\Debuggers\\x64\\cdb.exe"
+  symbol_path: "SRV*C:\\Symbols*https://msdl.microsoft.com/download/symbols"
+  timeout: 30
+
+# LLM 配置
+llm:
+  provider: "openai"
+  model: "gpt-4"
+  api_key: "${OPENAI_API_KEY}"
+  max_tokens: 2000
+  temperature: 0.3
+  timeout: 60
+
+# CLI 配置
+cli:
+  theme: "dark"
+  history_size: 100
+  auto_save_history: true
+  history_file: "~/.ai_windbg_history"
+
+# 显示配置
+display:
+  default_mode: "smart"
+  max_output_lines: 1000
+  enable_syntax_highlight: true
+  enable_colors: true
+
+# 缓存配置
+cache:
+  enabled: true
+  ttl: 3600
+  max_size: 100
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "~/.ai_windbg.log"
+  max_size: 10485760
+  backup_count: 5
+
+# 安全配置
+security:
+  enable_command_validation: true
+  allow_dangerous_commands: false
+  max_command_length: 1000
