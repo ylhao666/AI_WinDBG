@@ -25,6 +25,42 @@ export interface AnalysisReport {
   confidence: number;
 }
 
+export enum AnalysisStatus {
+  PENDING = 'pending',
+  RUNNING = 'running',
+  COMPLETED = 'completed',
+  ERROR = 'error',
+  CANCELLED = 'cancelled'
+}
+
+export interface AnalysisProgress {
+  task_id: string;
+  status: AnalysisStatus;
+  progress: number;
+  message: string;
+  result?: AnalysisReport;
+  error?: string;
+}
+
+export interface AnalysisThinking {
+  task_id: string;
+  content: string;
+  timestamp?: string;
+}
+
+export interface AnalysisTask {
+  task_id: string;
+  status: AnalysisStatus;
+  progress: number;
+  message: string;
+  result?: AnalysisReport;
+  error?: string;
+  thinking_history: AnalysisThinking[];
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
+}
+
 export interface Config {
   app_name: string;
   app_version: string;

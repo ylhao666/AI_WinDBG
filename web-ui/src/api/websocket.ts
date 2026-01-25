@@ -1,4 +1,4 @@
-import { WebSocketMessage } from '../types';
+import { WebSocketMessage, AnalysisProgress, AnalysisThinking } from '../types';
 
 class WebSocketManager {
   private ws: WebSocket | null = null;
@@ -68,6 +68,54 @@ class WebSocketManager {
     if (callbacks) {
       callbacks.forEach((callback) => callback(data));
     }
+  }
+
+  onAnalysisProgress(callback: (data: AnalysisProgress) => void) {
+    this.on('analysis_progress', callback);
+  }
+
+  offAnalysisProgress(callback: (data: AnalysisProgress) => void) {
+    this.off('analysis_progress', callback);
+  }
+
+  onAnalysisThinking(callback: (data: AnalysisThinking) => void) {
+    this.on('analysis_thinking', callback);
+  }
+
+  offAnalysisThinking(callback: (data: AnalysisThinking) => void) {
+    this.off('analysis_thinking', callback);
+  }
+
+  onAnalysisReport(callback: (data: { report: any }) => void) {
+    this.on('analysis_report', callback);
+  }
+
+  offAnalysisReport(callback: (data: { report: any }) => void) {
+    this.off('analysis_report', callback);
+  }
+
+  onCommandOutput(callback: (data: { output: string; command: string; mode: string }) => void) {
+    this.on('command_output', callback);
+  }
+
+  offCommandOutput(callback: (data: { output: string; command: string; mode: string }) => void) {
+    this.off('command_output', callback);
+  }
+
+  onSessionLoaded(callback: () => void) {
+    this.on('session_loaded', callback);
+  }
+
+  offSessionLoaded(callback: () => void) {
+    this.off('session_loaded', callback);
+  }
+
+  onSessionClosed(callback: () => void) {
+    this.on('session_closed', callback);
+  }
+
+  offSessionClosed(callback: () => void) {
+    this.off('session_closed', callback);
   }
 }
 

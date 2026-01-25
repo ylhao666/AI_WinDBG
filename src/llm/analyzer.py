@@ -1,7 +1,8 @@
 """智能分析器"""
 
 import json
-from typing import Optional, Dict, Any
+import asyncio
+from typing import Optional, Dict, Any, Callable, AsyncGenerator
 
 from src.llm.client import LLMClient
 from src.llm.cache import ResponseCache
@@ -170,3 +171,164 @@ class SmartAnalyzer:
         if self.cache:
             self.cache.clear()
             LoggerManager.info("分析器缓存已清空")
+
+    async def analyze_output_async(
+        self,
+        raw_output: str,
+        command: str,
+        progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+        use_cache: bool = True
+    ) -> AnalysisReport:
+        """异步分析 WinDBG 输出
+        
+        Args:
+            raw_output: WinDBG 原始输出
+            command: 执行的命令
+            progress_callback: 进度回调函数，接收 (stage, message, data)
+            use_cache: 是否使用缓存
+            
+        Returns:
+            分析报告
+        """
+        if not self.client.is_available():
+            raise AnalysisError("LLM 客户端不可用")
+
+        try:
+            if progress_callback:
+                await progress_callback("checking_cache", "检查缓存...", {})
+
+            # 检查缓存
+            if use_cache and self.cache:
+                cached = self.cache.get(raw_output)
+                if cached:
+                    LoggerManager.debug("使用缓存的分析结果")
+                    if progress_callback:
+                        await progress_callback("cache_hit", "使用缓存结果", {})
+                    return AnalysisReport.from_dict(cached)
+
+            if progress_callback:
+                await progress_callback("preparing", "准备分析提示...", {})
+
+            # 生成分析提示
+            prompt = self.templates.format_crash_analysis(command, raw_output)
+
+            if progress_callback:
+                await progress_callback("analyzing", "正在分析崩溃信息...", {})
+
+            # 调用异步 LLM
+            response = await self.client.generate_completion_async(prompt)
+
+            if progress_callback:
+                await progress_callback("parsing", "解析分析结果...", {})
+
+            # 解析响应
+            report = self._parse_analysis_response(response)
+            report.raw_output = raw_output
+            report.command = command
+
+            # 缓存结果
+            if use_cache and self.cache:
+                self.cache.set(raw_output, report.to_dict())
+
+            if progress_callback:
+                await progress_callback("completed", "分析完成", report.to_dict())
+
+            LoggerManager.info("智能分析完成")
+
+            return report
+
+        except Exception as e:
+            LoggerManager.error(f"异步分析失败: {str(e)}")
+            if progress_callback:
+                await progress_callback("error", f"分析失败: {str(e)}", {"error": str(e)})
+            raise AnalysisError(f"分析失败: {str(e)}")
+
+    async def analyze_output_streaming(
+        self,
+        raw_output: str,
+        command: str,
+        progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+        use_cache: bool = True
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """流式分析 WinDBG 输出
+        
+        Args:
+            raw_output: WinDBG 原始输出
+            command: 执行的命令
+            progress_callback: 进度回调函数，接收 (stage, message, data)
+            use_cache: 是否使用缓存
+            
+        Yields:
+            分析进度信息
+        """
+        if not self.client.is_available():
+            raise AnalysisError("LLM 客户端不可用")
+
+        try:
+            if progress_callback:
+                await progress_callback("checking_cache", "检查缓存...", {})
+
+            # 检查缓存
+            if use_cache and self.cache:
+                cached = self.cache.get(raw_output)
+                if cached:
+                    LoggerManager.debug("使用缓存的分析结果")
+                    yield {
+                        "type": "cache_hit",
+                        "message": "使用缓存结果",
+                        "data": cached
+                    }
+                    return
+
+            if progress_callback:
+                await progress_callback("preparing", "准备分析提示...", {})
+
+            # 生成分析提示
+            prompt = self.templates.format_crash_analysis(command, raw_output)
+
+            if progress_callback:
+                await progress_callback("analyzing", "正在分析崩溃信息...", {})
+
+            # 调用流式 LLM
+            full_response = ""
+            async for chunk in self.client.generate_streaming_completion(prompt, progress_callback):
+                full_response += chunk
+                yield {
+                    "type": "thinking",
+                    "message": "思考中...",
+                    "data": {"chunk": chunk}
+                }
+
+            if progress_callback:
+                await progress_callback("parsing", "解析分析结果...", {})
+
+            # 解析响应
+            report = self._parse_analysis_response(full_response)
+            report.raw_output = raw_output
+            report.command = command
+
+            # 缓存结果
+            if use_cache and self.cache:
+                self.cache.set(raw_output, report.to_dict())
+
+            if progress_callback:
+                await progress_callback("completed", "分析完成", report.to_dict())
+
+            yield {
+                "type": "completed",
+                "message": "分析完成",
+                "data": report.to_dict()
+            }
+
+            LoggerManager.info("智能分析完成")
+
+        except Exception as e:
+            LoggerManager.error(f"流式分析失败: {str(e)}")
+            if progress_callback:
+                await progress_callback("error", f"分析失败: {str(e)}", {"error": str(e)})
+            yield {
+                "type": "error",
+                "message": f"分析失败: {str(e)}",
+                "data": {"error": str(e)}
+            }
+            raise AnalysisError(f"分析失败: {str(e)}")

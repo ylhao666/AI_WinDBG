@@ -5,12 +5,18 @@ import {
   CommandInput,
   OutputDisplay,
   AnalysisReport,
+  AnalysisProgress,
   CommandHistory,
   FileUpload,
 } from '../components';
 import { sessionAPI, commandAPI, analysisAPI } from '../api';
 import { wsManager } from '../api/websocket';
-import { AnalysisReport as AnalysisReportType } from '../types';
+import { 
+  AnalysisReport as AnalysisReportType, 
+  AnalysisProgress as AnalysisProgressType,
+  AnalysisThinking,
+  AnalysisStatus
+} from '../types';
 
 const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
@@ -22,41 +28,61 @@ export const Dashboard: React.FC = () => {
   const [analysisReport, setAnalysisReport] = useState<AnalysisReportType | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+  const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgressType | null>(null);
+  const [thinkingHistory, setThinkingHistory] = useState<AnalysisThinking[]>([]);
 
   useEffect(() => {
     wsManager.connect('ws://localhost:8000/ws/output');
     wsManager.connect('ws://localhost:8000/ws/session');
 
-    wsManager.on('command_output', (data) => {
+    wsManager.onCommandOutput((data) => {
       setOutput(data.output);
       setCurrentCommand(data.command);
       if (data.mode === 'smart' || data.mode === 'both') {
-        analyzeOutput(data.output, data.command);
+        analyzeOutputAsync(data.output, data.command);
       }
     });
 
-    wsManager.on('natural_language_output', (data) => {
-      setOutput(data.output);
-      setCurrentCommand(data.command);
-      if (data.mode === 'smart' || data.mode === 'both') {
-        analyzeOutput(data.output, data.command);
+    wsManager.onAnalysisProgress((data) => {
+      setAnalysisProgress(data);
+      if (data.status === AnalysisStatus.COMPLETED && data.result) {
+        setAnalysisReport(data.result);
+        setAnalyzing(false);
+        setCurrentTaskId(null);
+        message.success('智能分析完成');
+      } else if (data.status === AnalysisStatus.ERROR) {
+        setAnalyzing(false);
+        setCurrentTaskId(null);
+        message.error(`分析失败: ${data.error}`);
+      } else if (data.status === AnalysisStatus.CANCELLED) {
+        setAnalyzing(false);
+        setCurrentTaskId(null);
+        message.info('分析已取消');
       }
     });
 
-    wsManager.on('analysis_report', (data) => {
+    wsManager.onAnalysisThinking((data) => {
+      setThinkingHistory(prev => [...prev, data]);
+    });
+
+    wsManager.onAnalysisReport((data) => {
       setAnalysisReport(data.report);
       setAnalyzing(false);
     });
 
-    wsManager.on('session_loaded', () => {
+    wsManager.onSessionLoaded(() => {
       message.success('转储文件加载成功');
       fetchHistory();
     });
 
-    wsManager.on('session_closed', () => {
+    wsManager.onSessionClosed(() => {
       message.info('会话已关闭');
       setOutput('');
       setAnalysisReport(null);
+      setAnalysisProgress(null);
+      setThinkingHistory([]);
+      setCurrentTaskId(null);
     });
 
     fetchHistory();
@@ -91,13 +117,16 @@ export const Dashboard: React.FC = () => {
       setLoading(true);
       setOutput('');
       setAnalysisReport(null);
+      setAnalysisProgress(null);
+      setThinkingHistory([]);
+      setCurrentTaskId(null);
 
       const result = await commandAPI.execute(command, mode);
       setOutput(result.output);
       setCurrentCommand(result.command);
 
       if (mode === 'smart' || mode === 'both') {
-        await analyzeOutput(result.output, result.command);
+        await analyzeOutputAsync(result.output, result.command);
       }
 
       await fetchHistory();
@@ -108,16 +137,31 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const analyzeOutput = async (rawOutput: string, command: string) => {
+  const analyzeOutputAsync = async (rawOutput: string, command: string) => {
     try {
       setAnalyzing(true);
-      const report = await analysisAPI.getReport(rawOutput, command);
-      setAnalysisReport(report);
+      setThinkingHistory([]);
+      setAnalysisProgress(null);
+      
+      const response = await analysisAPI.analyzeAsync(rawOutput, command, true, true);
+      setCurrentTaskId(response.task_id);
+      
+      message.info('分析任务已创建');
     } catch (error: any) {
       console.error('Analysis failed:', error);
-      message.warning('智能分析失败');
-    } finally {
+      message.error('创建分析任务失败');
       setAnalyzing(false);
+    }
+  };
+
+  const handleCancelAnalysis = async () => {
+    if (currentTaskId) {
+      try {
+        await analysisAPI.cancelTask(currentTaskId);
+        message.info('正在取消分析...');
+      } catch (error: any) {
+        message.error(error.response?.data?.detail || '取消分析失败');
+      }
     }
   };
 
@@ -153,7 +197,23 @@ export const Dashboard: React.FC = () => {
             )}
 
             <OutputDisplay output={output} command={currentCommand} />
-            <AnalysisReport report={analysisReport} loading={analyzing} />
+            
+            {analysisProgress && (
+              <AnalysisProgress 
+                progress={analysisProgress} 
+                thinkingHistory={thinkingHistory}
+                onCancel={handleCancelAnalysis}
+              />
+            )}
+            
+            {!analysisProgress && (
+              <AnalysisReport 
+                report={analysisReport} 
+                loading={analyzing}
+                progress={analysisProgress}
+                onCancelAnalysis={handleCancelAnalysis}
+              />
+            )}
           </Space>
         </Content>
       </Layout>

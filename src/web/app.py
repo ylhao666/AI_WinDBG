@@ -12,6 +12,7 @@ from src.core.logger import LoggerManager
 from src.core.exceptions import ConfigError
 from src.web.api import session, command, analysis, config as config_api
 from src.web.websocket.manager import WebSocketManager
+from src.web.services.async_analysis_service import AsyncAnalysisService
 
 
 def create_app(
@@ -45,6 +46,9 @@ def create_app(
     # WebSocket 管理器
     ws_manager = WebSocketManager()
     
+    # 异步分析服务
+    async_analysis_service = AsyncAnalysisService(analyzer, ws_manager)
+    
     # 依赖注入
     app.state.config = app_config
     app.state.session_manager = session_manager
@@ -54,6 +58,7 @@ def create_app(
     app.state.executor = executor
     app.state.nlp_processor = nlp_processor
     app.state.ws_manager = ws_manager
+    app.state.async_analysis_service = async_analysis_service
     
     # 注册路由
     app.include_router(session.router, prefix="/api/session", tags=["session"])

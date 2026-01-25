@@ -1,8 +1,9 @@
 """LLM 客户端"""
 
 import json
-from typing import Optional, Dict, Any
-from openai import OpenAI
+import asyncio
+from typing import Optional, Dict, Any, AsyncGenerator, Callable
+from openai import OpenAI, AsyncOpenAI
 
 from src.core.config import ConfigManager
 from src.core.logger import LoggerManager
@@ -24,6 +25,7 @@ class LLMClient:
         if not api_key:
             LoggerManager.warning("未配置 LLM API Key，LLM 功能将不可用")
             self.client = None
+            self.async_client = None
             return
 
         try:
@@ -52,10 +54,12 @@ class LLMClient:
                     client_params["default_headers"] = default_headers
 
             self.client = OpenAI(**client_params)
+            self.async_client = AsyncOpenAI(**client_params)
             LoggerManager.info(f"LLM 客户端初始化成功 (provider: {provider})")
         except Exception as e:
             LoggerManager.error(f"LLM 客户端初始化失败: {str(e)}")
             self.client = None
+            self.async_client = None
 
     def is_available(self) -> bool:
         """检查 LLM 是否可用"""
@@ -123,3 +127,109 @@ class LLMClient:
         except Exception as e:
             LoggerManager.error(f"生成 JSON 补全失败: {str(e)}")
             raise
+
+    async def generate_streaming_completion(
+        self,
+        prompt: str,
+        progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None
+    ) -> AsyncGenerator[str, None]:
+        """生成流式补全
+        
+        Args:
+            prompt: 提示文本
+            progress_callback: 进度回调函数，接收 (stage, message, data)
+            max_tokens: 最大令牌数
+            temperature: 温度参数
+            
+        Yields:
+            生成的文本片段
+        """
+        if not self.is_available():
+            raise LLMError("LLM 客户端不可用")
+
+        try:
+            model = self.config.get_llm_model()
+            max_tokens = max_tokens or self.config.get_llm_max_tokens()
+            temperature = temperature or self.config.get_llm_temperature()
+
+            LoggerManager.debug(f"调用 LLM 流式 API: {model}, max_tokens={max_tokens}")
+
+            if progress_callback:
+                await progress_callback("preparing", "准备调用 LLM...", {})
+
+            stream = await self.async_client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=max_tokens,
+                temperature=temperature,
+                stream=True
+            )
+
+            if progress_callback:
+                await progress_callback("analyzing", "正在分析...", {})
+
+            full_content = ""
+            async for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_content += content
+                    
+                    if progress_callback:
+                        await progress_callback("thinking", content, {"chunk": content})
+                    
+                    yield content
+
+            LoggerManager.debug(f"LLM 流式响应完成，总长度: {len(full_content)}")
+
+        except Exception as e:
+            LoggerManager.error(f"LLM 流式调用失败: {str(e)}")
+            raise APIError(f"LLM 流式调用失败: {str(e)}")
+
+    async def generate_completion_async(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None
+    ) -> str:
+        """异步生成补全
+        
+        Args:
+            prompt: 提示文本
+            max_tokens: 最大令牌数
+            temperature: 温度参数
+            
+        Returns:
+            生成的完整文本
+        """
+        if not self.is_available():
+            raise LLMError("LLM 客户端不可用")
+
+        try:
+            model = self.config.get_llm_model()
+            max_tokens = max_tokens or self.config.get_llm_max_tokens()
+            temperature = temperature or self.config.get_llm_temperature()
+
+            LoggerManager.debug(f"异步调用 LLM: {model}, max_tokens={max_tokens}")
+
+            response = await self.async_client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
+
+            result = response.choices[0].message.content
+            LoggerManager.debug(f"LLM 异步响应内容: {result}")
+            LoggerManager.debug(f"LLM 异步响应长度: {len(result)}")
+
+            return result
+
+        except Exception as e:
+            LoggerManager.error(f"LLM 异步调用失败: {str(e)}")
+            raise APIError(f"LLM 异步调用失败: {str(e)}")
