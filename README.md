@@ -1,6 +1,6 @@
 # AI WinDBG 崩溃分析器
 
-基于 AI 与 WinDBG 内核结合的崩溃分析应用程序，帮助用户快速分析和理解 Windows 崩溃转储文件。
+基于 AI 与 WinDBG 内核结合的崩溃分析应用程序，提供命令行界面（CLI）和可视化 Web 界面，帮助用户快速分析和理解 Windows 崩溃转储文件。
 
 ## 功能特性
 
@@ -12,6 +12,7 @@
 - **智能分析**: 基于 LLM 的智能分析功能，自动生成结构化的崩溃分析报告
 - **双模式显示**: 支持原始输出和智能分析两种显示模式
 - **命令历史**: 自动保存命令历史，方便重复使用
+- **可视化界面**: 提供现代化的 Web 界面，支持实时输出和状态同步
 
 ### 技术特点
 
@@ -20,6 +21,9 @@
 - **缓存机制**: LLM 响应缓存，减少 API 调用次数
 - **安全验证**: 命令安全验证，防止恶意命令执行
 - **持久会话管理**: 使用 Popen 和线程管理 cdb 进程，实现命令在同一调试会话中连续执行
+- **双模式运行**: 支持 CLI、Web 和双模式运行，满足不同使用场景
+- **实时通信**: 基于 WebSocket 的实时输出推送和状态同步
+- **响应式设计**: Web 界面支持桌面、平板和移动设备
 
 ## 安装
 
@@ -235,22 +239,46 @@ AI_WinDBG/
 
 ## 开发
 
+### 后端开发
+
+```bash
+# 运行测试
+pytest tests/
+
+# 代码格式化
+black src/
+
+# 代码检查
+flake8 src/
+```
+
+### 前端开发
+
+```bash
+cd web-ui
+
+# 安装依赖
+npm install
+
+# 开发模式（热重载）
+npm run dev
+
+# 构建生产版本
+npm run build
+
+# 预览构建结果
+npm run preview
+```
+
 ### 运行测试
 
 ```bash
+# 后端测试
 pytest tests/
-```
 
-### 代码格式化
-
-```bash
-black src/
-```
-
-### 代码检查
-
-```bash
-flake8 src/
+# 前端测试（需要先配置）
+cd web-ui
+npm test
 ```
 
 ## 常见问题
@@ -273,6 +301,28 @@ A: 编辑 `config.yaml` 文件中的 `llm.provider` 配置：
 
 A: 检查 LLM API Key 是否有效，以及是否有足够的 API 配额。如果使用 OpenRouter，请确保模型名称格式正确（如 `openai/gpt-4`）。
 
+### Q: Web 界面无法访问
+
+A: 检查以下几点：
+1. 确认已构建前端：`cd web-ui && npm run build`
+2. 检查 `config.yaml` 中的 `web.port` 配置
+3. 确认防火墙允许访问指定端口
+4. 查看控制台日志获取详细错误信息
+
+### Q: 如何在开发模式下运行 Web 界面？
+
+A: 使用以下命令：
+```bash
+cd web-ui
+npm run dev
+```
+
+开发服务器运行在 `http://localhost:3000`，支持热重载。
+
+### Q: 双模式运行时，CLI 和 Web 界面如何同步？
+
+A: 双模式运行时，CLI 和 Web 界面共享同一个 `SessionManager` 实例，会话状态自动同步。通过 WebSocket 实现实时输出推送。
+
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！
@@ -284,4 +334,5 @@ MIT License
 ## 联系方式
 
 - 项目主页: https://github.com/yourusername/ai-windbg
+- 问题反馈: https://github.com/yourusername/ai-windbg/issues
 - 问题反馈: https://github.com/yourusername/ai-windbg/issues

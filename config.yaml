@@ -54,3 +54,13 @@ security:
   enable_command_validation: true
   allow_dangerous_commands: false
   max_command_length: 1000
+
+# Web 界面配置
+web:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: ["*"]
+  static_files_path: "./src/web/static/frontend"
+  reload: false
+  log_level: "info"

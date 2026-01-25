@@ -33,8 +33,14 @@ class SessionManager:
         self.session_active = False
         self.session_pid: Optional[int] = None
 
-    def set_state(self, state: SessionState):
+    def set_state(self, state: SessionState | str):
         """设置会话状态"""
+        if isinstance(state, str):
+            try:
+                state = SessionState(state.lower())
+            except ValueError:
+                LoggerManager.warning(f"无效的状态值: {state}，使用默认状态 IDLE")
+                state = SessionState.IDLE
         LoggerManager.debug(f"会话状态变更: {self.state.value} -> {state.value}")
         self.state = state
 
@@ -73,8 +79,14 @@ class SessionManager:
         """获取 cdb 会话 PID"""
         return self.session_pid
 
-    def set_display_mode(self, mode: DisplayMode):
+    def set_display_mode(self, mode: DisplayMode | str):
         """设置显示模式"""
+        if isinstance(mode, str):
+            try:
+                mode = DisplayMode(mode.lower())
+            except ValueError:
+                LoggerManager.warning(f"无效的显示模式值: {mode}，使用默认模式 SMART")
+                mode = DisplayMode.SMART
         self.display_mode = mode
         LoggerManager.info(f"显示模式设置为: {mode.value}")
 

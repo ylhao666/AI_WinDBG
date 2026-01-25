@@ -169,3 +169,31 @@ class ConfigManager:
     def get_max_command_length(self) -> int:
         """获取最大命令长度"""
         return self.get("security.max_command_length", 1000)
+
+    def is_web_enabled(self) -> bool:
+        """是否启用 Web 界面"""
+        return self.get("web.enabled", True)
+
+    def get_web_host(self) -> str:
+        """获取 Web 服务器主机地址"""
+        return self.get("web.host", "0.0.0.0")
+
+    def get_web_port(self) -> int:
+        """获取 Web 服务器端口"""
+        return self.get("web.port", 8000)
+
+    def get_web_cors_origins(self) -> list:
+        """获取 Web CORS 允许的源"""
+        return self.get("web.cors_origins", ["*"])
+
+    def get_web_static_path(self) -> str:
+        """获取 Web 静态文件路径"""
+        return self.get("web.static_files_path", "./src/web/static/frontend")
+
+    def is_web_reload_enabled(self) -> bool:
+        """是否启用 Web 热重载"""
+        return self.get("web.reload", False)
+
+    def get_web_log_level(self) -> str:
+        """获取 Web 日志级别"""
+        return self.get("web.log_level", "info")

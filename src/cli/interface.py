@@ -367,6 +367,11 @@ class CLIInterface:
                 self.display.print_warning("LLM 不可用，跳过智能分析")
                 return
 
+            # 检查输出长度，如果为空则跳过分析
+            if not raw_output or len(raw_output.strip()) == 0:
+                LoggerManager.debug("输出内容为空，跳过智能分析")
+                return
+
             self.display.print_info("正在进行智能分析...")
 
             # 执行分析
