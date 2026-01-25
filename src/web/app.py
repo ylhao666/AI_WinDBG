@@ -19,7 +19,9 @@ def create_app(
     session_manager=None,
     windbg_engine=None,
     llm_client=None,
-    analyzer=None
+    analyzer=None,
+    executor=None,
+    nlp_processor=None
 ) -> FastAPI:
     """创建 FastAPI 应用"""
     
@@ -49,6 +51,8 @@ def create_app(
     app.state.windbg_engine = windbg_engine
     app.state.llm_client = llm_client
     app.state.analyzer = analyzer
+    app.state.executor = executor
+    app.state.nlp_processor = nlp_processor
     app.state.ws_manager = ws_manager
     
     # 注册路由

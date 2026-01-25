@@ -101,8 +101,14 @@ class SessionManager:
         next_index = (current_index + 1) % len(modes)
         self.set_display_mode(modes[next_index])
 
-    def add_output(self, output: str, command: str, mode: DisplayMode):
+    def add_output(self, output: str, command: str, mode: DisplayMode | str):
         """添加输出到历史"""
+        if isinstance(mode, str):
+            try:
+                mode = DisplayMode(mode.lower())
+            except ValueError:
+                LoggerManager.warning(f"无效的显示模式值: {mode}，使用默认模式 SMART")
+                mode = DisplayMode.SMART
         self.output_history.append({
             "timestamp": datetime.now(),
             "command": command,

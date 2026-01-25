@@ -62,7 +62,9 @@ def run_web_mode(config: ConfigManager, components: dict):
             session_manager=components['session_manager'],
             windbg_engine=components['windbg_engine'],
             llm_client=components['llm_client'],
-            analyzer=components['analyzer']
+            analyzer=components['analyzer'],
+            executor=components['executor'],
+            nlp_processor=components['nlp_processor']
         )
         
         host = config.get_web_host()
@@ -92,7 +94,9 @@ def run_both_mode(config: ConfigManager, components: dict):
             session_manager=components['session_manager'],
             windbg_engine=components['windbg_engine'],
             llm_client=components['llm_client'],
-            analyzer=components['analyzer']
+            analyzer=components['analyzer'],
+            executor=components['executor'],
+            nlp_processor=components['nlp_processor']
         )
         
         host = config.get_web_host()
