@@ -1,25 +1,25 @@
-import { WebSocketMessage, AnalysisProgress, AnalysisThinking } from '../types';
+import { WebSocketMessage, AnalysisProgress } from '../types';
 
 class WebSocketManager {
-  private ws: WebSocket | null = null;
-  private reconnectAttempts = 0;
+  private connections: Map<string, WebSocket> = new Map();
+  private reconnectAttempts: Map<string, number> = new Map();
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
 
-  connect(url: string) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+  connect(url: string, name: string = 'default') {
+    if (this.connections.has(name) && this.connections.get(name)?.readyState === WebSocket.OPEN) {
       return;
     }
 
-    this.ws = new WebSocket(url);
+    const ws = new WebSocket(url);
 
-    this.ws.onopen = () => {
-      console.log('WebSocket connected');
-      this.reconnectAttempts = 0;
+    ws.onopen = () => {
+      console.log(`WebSocket connected: ${name}`);
+      this.reconnectAttempts.set(name, 0);
     };
 
-    this.ws.onmessage = (event) => {
+    ws.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
         const { type, ...data } = message;
@@ -29,23 +29,32 @@ class WebSocketManager {
       }
     };
 
-    this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+    ws.onerror = (error) => {
+      console.error(`WebSocket error: ${name}`, error);
     };
 
-    this.ws.onclose = () => {
-      console.log('WebSocket closed');
-      if (this.reconnectAttempts < this.maxReconnectAttempts) {
-        this.reconnectAttempts++;
-        setTimeout(() => this.connect(url), this.reconnectDelay);
+    ws.onclose = () => {
+      console.log(`WebSocket closed: ${name}`);
+      const attempts = this.reconnectAttempts.get(name) || 0;
+      if (attempts < this.maxReconnectAttempts) {
+        this.reconnectAttempts.set(name, attempts + 1);
+        setTimeout(() => this.connect(url, name), this.reconnectDelay);
       }
     };
+
+    this.connections.set(name, ws);
   }
 
-  disconnect() {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
+  disconnect(name?: string) {
+    if (name) {
+      const ws = this.connections.get(name);
+      if (ws) {
+        ws.close();
+        this.connections.delete(name);
+      }
+    } else {
+      this.connections.forEach((ws) => ws.close());
+      this.connections.clear();
     }
   }
 
@@ -76,14 +85,6 @@ class WebSocketManager {
 
   offAnalysisProgress(callback: (data: AnalysisProgress) => void) {
     this.off('analysis_progress', callback);
-  }
-
-  onAnalysisThinking(callback: (data: AnalysisThinking) => void) {
-    this.on('analysis_thinking', callback);
-  }
-
-  offAnalysisThinking(callback: (data: AnalysisThinking) => void) {
-    this.off('analysis_thinking', callback);
   }
 
   onAnalysisReport(callback: (data: { report: any }) => void) {

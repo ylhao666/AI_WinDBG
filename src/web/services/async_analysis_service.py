@@ -260,13 +260,7 @@ class AsyncAnalysisService:
                 progress_callback,
                 use_cache
             ):
-                if progress["type"] == "thinking":
-                    task.thinking_history.append({
-                        "timestamp": datetime.now().isoformat(),
-                        "content": progress["data"].get("chunk", "")
-                    })
-                    await self._broadcast_thinking(task, progress["data"].get("chunk", ""))
-                elif progress["type"] == "completed":
+                if progress["type"] == "completed":
                     task.result = progress["data"]
                     task.status = "completed"
                     task.completed_at = datetime.now()
@@ -340,15 +334,7 @@ class AsyncAnalysisService:
                 "error": task.error
             })
     
-    async def _broadcast_thinking(self, task: AnalysisTask, content: str):
-        """广播思考过程"""
-        if self.ws_manager:
-            await self.ws_manager.broadcast_output({
-                "type": "analysis_thinking",
-                "task_id": task.task_id,
-                "content": content
-            })
-    
+
     async def cleanup_old_tasks(self, max_age_seconds: int = 3600):
         """清理旧任务"""
         now = datetime.now()

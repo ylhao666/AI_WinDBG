@@ -1,29 +1,23 @@
-import { useState } from 'react';
-import { Card, Progress, Button, Space, Typography, Collapse, Tag, Alert, Spin } from 'antd';
+import { Card, Progress, Button, Space, Typography, Tag, Alert, Spin } from 'antd';
 import {
   LoadingOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   StopOutlined,
-  ThunderboltOutlined,
 } from '@ant-design/icons';
-import { AnalysisProgress, AnalysisThinking, AnalysisStatus } from '../types';
+import { AnalysisProgress, AnalysisStatus } from '../types';
 
-const { Text, Paragraph } = Typography;
-const { Panel } = Collapse;
+const { Text } = Typography;
 
 interface AnalysisProgressProps {
   progress: AnalysisProgress | null;
-  thinkingHistory: AnalysisThinking[];
   onCancel?: () => void;
 }
 
 export const AnalysisProgressView: React.FC<AnalysisProgressProps> = ({
   progress,
-  thinkingHistory,
   onCancel
 }) => {
-  const [expanded, setExpanded] = useState(false);
 
   if (!progress) {
     return null;
@@ -133,45 +127,6 @@ export const AnalysisProgressView: React.FC<AnalysisProgressProps> = ({
             showIcon
             icon={<CloseCircleOutlined />}
           />
-        )}
-
-        {thinkingHistory.length > 0 && (
-          <Collapse 
-            ghost 
-            activeKey={expanded ? ['thinking'] : []}
-            onChange={(keys) => setExpanded(keys.length > 0)}
-          >
-            <Panel 
-              header={
-                <Space>
-                  <ThunderboltOutlined />
-                  <Text>思考过程 ({thinkingHistory.length})</Text>
-                </Space>
-              } 
-              key="thinking"
-            >
-              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                {thinkingHistory.map((thinking, index) => (
-                  <div key={index} style={{ marginBottom: '8px' }}>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      {thinking.timestamp || `步骤 ${index + 1}`}
-                    </Text>
-                    <Paragraph 
-                      style={{ 
-                        marginTop: '4px',
-                        marginBottom: '8px',
-                        padding: '8px',
-                        background: '#f5f5f5',
-                        borderRadius: '4px'
-                      }}
-                    >
-                      {thinking.content}
-                    </Paragraph>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-          </Collapse>
         )}
 
         {isRunning && (

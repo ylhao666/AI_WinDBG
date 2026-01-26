@@ -142,7 +142,6 @@ async def analyze_async(
                 request.use_cache
             )
         
-        LoggerManager.info(f"创建异步分析任务: {task_id}")
         return AnalyzeAsyncResponse(
             task_id=task_id,
             message="分析任务已创建"

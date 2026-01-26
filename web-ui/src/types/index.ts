@@ -42,12 +42,6 @@ export interface AnalysisProgress {
   error?: string;
 }
 
-export interface AnalysisThinking {
-  task_id: string;
-  content: string;
-  timestamp?: string;
-}
-
 export interface AnalysisTask {
   task_id: string;
   status: AnalysisStatus;
@@ -55,7 +49,6 @@ export interface AnalysisTask {
   message: string;
   result?: AnalysisReport;
   error?: string;
-  thinking_history: AnalysisThinking[];
   created_at: string;
   started_at?: string;
   completed_at?: string;

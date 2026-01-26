@@ -14,7 +14,6 @@ import { wsManager } from '../api/websocket';
 import { 
   AnalysisReport as AnalysisReportType, 
   AnalysisProgress as AnalysisProgressType,
-  AnalysisThinking,
   AnalysisStatus
 } from '../types';
 
@@ -30,21 +29,20 @@ export const Dashboard: React.FC = () => {
   const [history, setHistory] = useState<string[]>([]);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgressType | null>(null);
-  const [thinkingHistory, setThinkingHistory] = useState<AnalysisThinking[]>([]);
 
   useEffect(() => {
-    wsManager.connect('ws://localhost:8000/ws/output');
-    wsManager.connect('ws://localhost:8000/ws/session');
+    wsManager.connect('ws://localhost:8000/ws/output', 'output');
+    wsManager.connect('ws://localhost:8000/ws/session', 'session');
 
-    wsManager.onCommandOutput((data) => {
+    const handleCommandOutput = (data: any) => {
       setOutput(data.output);
       setCurrentCommand(data.command);
       if (data.mode === 'smart' || data.mode === 'both') {
         analyzeOutputAsync(data.output, data.command);
       }
-    });
+    };
 
-    wsManager.onAnalysisProgress((data) => {
+    const handleAnalysisProgress = (data: any) => {
       setAnalysisProgress(data);
       if (data.status === AnalysisStatus.COMPLETED && data.result) {
         setAnalysisReport(data.result);
@@ -60,34 +58,40 @@ export const Dashboard: React.FC = () => {
         setCurrentTaskId(null);
         message.info('分析已取消');
       }
-    });
+    };
 
-    wsManager.onAnalysisThinking((data) => {
-      setThinkingHistory(prev => [...prev, data]);
-    });
-
-    wsManager.onAnalysisReport((data) => {
+    const handleAnalysisReport = (data: any) => {
       setAnalysisReport(data.report);
       setAnalyzing(false);
-    });
+    };
 
-    wsManager.onSessionLoaded(() => {
+    const handleSessionLoaded = () => {
       message.success('转储文件加载成功');
       fetchHistory();
-    });
+    };
 
-    wsManager.onSessionClosed(() => {
+    const handleSessionClosed = () => {
       message.info('会话已关闭');
       setOutput('');
       setAnalysisReport(null);
       setAnalysisProgress(null);
-      setThinkingHistory([]);
       setCurrentTaskId(null);
-    });
+    };
+
+    wsManager.onCommandOutput(handleCommandOutput);
+    wsManager.onAnalysisProgress(handleAnalysisProgress);
+    wsManager.onAnalysisReport(handleAnalysisReport);
+    wsManager.onSessionLoaded(handleSessionLoaded);
+    wsManager.onSessionClosed(handleSessionClosed);
 
     fetchHistory();
 
     return () => {
+      wsManager.offCommandOutput(handleCommandOutput);
+      wsManager.offAnalysisProgress(handleAnalysisProgress);
+      wsManager.offAnalysisReport(handleAnalysisReport);
+      wsManager.offSessionLoaded(handleSessionLoaded);
+      wsManager.offSessionClosed(handleSessionClosed);
       wsManager.disconnect();
     };
   }, []);
@@ -118,16 +122,11 @@ export const Dashboard: React.FC = () => {
       setOutput('');
       setAnalysisReport(null);
       setAnalysisProgress(null);
-      setThinkingHistory([]);
       setCurrentTaskId(null);
 
       const result = await commandAPI.execute(command, mode);
       setOutput(result.output);
       setCurrentCommand(result.command);
-
-      if (mode === 'smart' || mode === 'both') {
-        await analyzeOutputAsync(result.output, result.command);
-      }
 
       await fetchHistory();
     } catch (error: any) {
@@ -140,7 +139,6 @@ export const Dashboard: React.FC = () => {
   const analyzeOutputAsync = async (rawOutput: string, command: string) => {
     try {
       setAnalyzing(true);
-      setThinkingHistory([]);
       setAnalysisProgress(null);
       
       const response = await analysisAPI.analyzeAsync(rawOutput, command, true, true);
@@ -201,7 +199,6 @@ export const Dashboard: React.FC = () => {
             {analysisProgress && (
               <AnalysisProgress 
                 progress={analysisProgress} 
-                thinkingHistory={thinkingHistory}
                 onCancel={handleCancelAnalysis}
               />
             )}

@@ -302,8 +302,22 @@ class SmartAnalyzer:
             if progress_callback:
                 await progress_callback("parsing", "解析分析结果...", {})
 
-            # 解析响应
-            report = self._parse_analysis_response(full_response)
+            LoggerManager.debug(f"完整响应: {full_response}")
+            # 解析响应 - 先将字符串转换为JSON字典
+            try:
+                json_start = full_response.find('{')
+                json_end = full_response.rfind('}') + 1
+                
+                if json_start == -1 or json_end == 0:
+                    raise ValueError("响应中未找到 JSON 数据")
+                
+                json_str = full_response[json_start:json_end]
+                response_dict = json.loads(json_str)
+            except json.JSONDecodeError as e:
+                LoggerManager.error(f"JSON 解析失败: {str(e)}")
+                raise AnalysisError(f"JSON 解析失败: {str(e)}")
+            
+            report = self._parse_analysis_response(response_dict)
             report.raw_output = raw_output
             report.command = command
 
