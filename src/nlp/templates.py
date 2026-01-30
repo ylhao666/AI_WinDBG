@@ -72,17 +72,20 @@ WinDBG 输出:
    - 异常地址
    - 异常描述
 
-3. **调用栈分析** (Call Stack Analysis)
-   - 关键帧分析
+3. **调用栈分析** (Call Stack)
+   - 关键帧分析（提取关键调用栈帧，包含地址、函数名、模块、偏移）
    - 崩溃点定位
    - 函数调用链
 
-4. **根因分析** (Root Cause Analysis)
+4. **模块信息** (Modules)
+   - 相关模块列表（名称、基地址、大小、版本、符号加载状态）
+
+5. **根因分析** (Root Cause Analysis)
    - 可能的根本原因
    - 问题代码位置
    - 相关模块信息
 
-5. **修复建议** (Fix Suggestions)
+6. **修复建议** (Fix Suggestions)
    - 具体的修复建议
    - 代码示例（如适用）
    - 预防措施
@@ -91,16 +94,41 @@ WinDBG 输出:
 
 输出格式:
 {{
-  "summary": "...",
-  "crash_type": "...",
-  "exception_code": "...",
-  "exception_address": "...",
-  "exception_description": "...",
-  "call_stack_analysis": "...",
-  "root_cause": "...",
-  "suggestions": ["...", "..."],
+  "summary": "崩溃摘要描述",
+  "crash_type": "崩溃类型，如 ACCESS_VIOLATION",
+  "exception_code": "异常代码，如 0xC0000005",
+  "exception_address": "异常地址",
+  "exception_description": "异常详细描述",
+  "exception_info": {{
+    "code": "异常代码",
+    "description": "异常描述",
+    "address": "异常地址",
+    "flags": "异常标志"
+  }},
+  "call_stack": [
+    {{
+      "address": "0x00007ff...",
+      "function": "函数名",
+      "module": "模块名",
+      "offset": "偏移量"
+    }}
+  ],
+  "modules": [
+    {{
+      "name": "模块名",
+      "base_address": "基地址",
+      "size": "大小",
+      "path": "路径",
+      "version": "版本",
+      "symbols_loaded": true/false
+    }}
+  ],
+  "root_cause": "根本原因分析",
+  "suggestions": ["建议1", "建议2", "建议3"],
   "confidence": 0.95
 }}
+
+请确保 JSON 格式完整且有效，所有字符串值都必须用双引号包裹。
 """
 
     STACK_ANALYSIS_TEMPLATE = """

@@ -14,12 +14,40 @@ export interface CommandResult {
   error?: string;
 }
 
+export interface StackFrame {
+  address: string;
+  function: string;
+  module: string;
+  offset?: string;
+  source_file?: string;
+  line_number?: number;
+}
+
+export interface ModuleInfo {
+  name: string;
+  base_address: string;
+  size: string;
+  path?: string;
+  version?: string;
+  symbols_loaded?: boolean;
+}
+
+export interface ExceptionInfo {
+  code: string;
+  description: string;
+  address?: string;
+  flags?: string;
+}
+
 export interface AnalysisReport {
   summary: string;
   crash_type: string;
   exception_code: string;
   exception_address: string;
   exception_description: string;
+  exception_info?: ExceptionInfo;
+  call_stack?: StackFrame[];
+  modules?: ModuleInfo[];
   root_cause: string;
   suggestions: string[];
   confidence: number;

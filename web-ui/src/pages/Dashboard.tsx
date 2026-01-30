@@ -48,6 +48,10 @@ export const Dashboard: React.FC = () => {
         setAnalysisReport(data.result);
         setAnalyzing(false);
         setCurrentTaskId(null);
+        // 分析完成后，延迟清除进度显示，让用户能看到完成状态
+        setTimeout(() => {
+          setAnalysisProgress(null);
+        }, 2000);
         message.success('智能分析完成');
       } else if (data.status === AnalysisStatus.ERROR) {
         setAnalyzing(false);
@@ -178,15 +182,14 @@ export const Dashboard: React.FC = () => {
       <Layout>
         <Sider width={300} style={{ background: '#fff', padding: '16px' }}>
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            <SessionStatus onRefresh={fetchHistory} />
             <FileUpload onLoad={handleLoadDump} loading={loading} />
             <CommandHistory history={history} onSelect={handleSelectHistory} />
           </Space>
         </Sider>
 
-        <Content style={{ padding: '24px', background: '#f0f2f5' }}>
+        <Content style={{ padding: '24px', background: '#f0f2f5', paddingBottom: '280px' }}>
           <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <CommandInput onExecute={handleExecute} disabled={loading} loading={loading} />
+            <SessionStatus onRefresh={fetchHistory} />
 
             {loading && (
               <div style={{ textAlign: 'center', padding: '24px' }}>
@@ -203,17 +206,18 @@ export const Dashboard: React.FC = () => {
               />
             )}
             
-            {!analysisProgress && (
-              <AnalysisReport 
-                report={analysisReport} 
-                loading={analyzing}
-                progress={analysisProgress}
-                onCancelAnalysis={handleCancelAnalysis}
-              />
-            )}
+            {/* 始终显示分析报告，即使在分析中也可以显示之前的报告 */}
+            <AnalysisReport 
+              report={analysisReport} 
+              loading={analyzing && !analysisReport}
+              progress={analysisProgress}
+              onCancelAnalysis={handleCancelAnalysis}
+            />
           </Space>
         </Content>
       </Layout>
+
+      <CommandInput onExecute={handleExecute} disabled={loading} loading={loading} />
     </Layout>
   );
 };

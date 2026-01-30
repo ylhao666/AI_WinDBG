@@ -12,12 +12,24 @@ windbg:
 
 # LLM 配置
 llm:
-  provider: "openrouter"
-  model: "z-ai/glm-4.5-air:free"
-  api_key: "${OPENROUTER_API_KEY}"
-  base_url: "https://openrouter.ai/api/v1"
-  site_url: "https://github.com/yourusername/ai-windbg"
-  site_name: "AI WinDBG"
+  # 供应商: openrouter, deepseek
+  # provider: "openrouter"
+  # model: "z-ai/glm-4.5-air:free"
+  # api_key: "${OPENROUTER_API_KEY}"
+  # base_url: "https://openrouter.ai/api/v1"
+  # site_url: "https://github.com/yourusername/ai-windbg"
+  # site_name: "AI WinDBG"
+  # max_tokens: 2000
+  # temperature: 0.3
+  # timeout: 60
+
+# DeepSeek 配置示例
+  provider: "deepseek"
+  # deepseek-chat: DeepSeek-V3.2 非思考模式
+  # deepseek-reasoner: DeepSeek-V3.2 思考模式
+  model: "deepseek-chat"
+  api_key: "${DEEPSEEK_API_KEY}"
+  base_url: "https://api.deepseek.com"
   max_tokens: 2000
   temperature: 0.3
   timeout: 60

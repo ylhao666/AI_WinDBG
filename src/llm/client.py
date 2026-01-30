@@ -52,6 +52,16 @@ class LLMClient:
                 
                 if default_headers:
                     client_params["default_headers"] = default_headers
+            
+            # 如果是 DeepSeek，设置 base_url
+            elif provider == "deepseek":
+                # DeepSeek API 使用与 OpenAI 兼容的格式
+                # base_url 可以是 https://api.deepseek.com 或 https://api.deepseek.com/v1
+                if base_url:
+                    client_params["base_url"] = base_url
+                else:
+                    # 默认使用 DeepSeek 官方 API 地址
+                    client_params["base_url"] = "https://api.deepseek.com"
 
             self.client = OpenAI(**client_params)
             self.async_client = AsyncOpenAI(**client_params)

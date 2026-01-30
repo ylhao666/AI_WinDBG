@@ -65,16 +65,67 @@ class SmartAnalyzer:
     def _parse_analysis_response(self, response: Dict[str, Any]) -> AnalysisReport:
         """解析分析响应"""
         try:
+            from src.output.models import StackFrame, ModuleInfo, ExceptionInfo
+
+            # 解析调用栈
+            call_stack = []
+            raw_call_stack = response.get("call_stack", [])
+            if raw_call_stack and isinstance(raw_call_stack, list):
+                for frame in raw_call_stack:
+                    if isinstance(frame, dict):
+                        call_stack.append(StackFrame(
+                            address=frame.get("address", ""),
+                            function=frame.get("function", ""),
+                            module=frame.get("module", ""),
+                            offset=frame.get("offset", ""),
+                            source_file=frame.get("source_file"),
+                            line_number=frame.get("line_number")
+                        ))
+
+            # 解析模块信息
+            modules = []
+            raw_modules = response.get("modules", [])
+            if raw_modules and isinstance(raw_modules, list):
+                for module in raw_modules:
+                    if isinstance(module, dict):
+                        modules.append(ModuleInfo(
+                            name=module.get("name", ""),
+                            base_address=module.get("base_address", ""),
+                            size=module.get("size", ""),
+                            path=module.get("path", ""),
+                            version=module.get("version"),
+                            symbols_loaded=module.get("symbols_loaded", False)
+                        ))
+
+            # 解析异常信息
+            exception_info = None
+            raw_exception_info = response.get("exception_info")
+            if raw_exception_info and isinstance(raw_exception_info, dict):
+                exception_info = ExceptionInfo(
+                    code=raw_exception_info.get("code", ""),
+                    description=raw_exception_info.get("description", ""),
+                    address=raw_exception_info.get("address", ""),
+                    flags=raw_exception_info.get("flags", "")
+                )
+
             report = AnalysisReport(
                 summary=response.get("summary", ""),
                 crash_type=response.get("crash_type", ""),
                 exception_code=response.get("exception_code", ""),
                 exception_address=response.get("exception_address", ""),
                 exception_description=response.get("exception_description", ""),
+                call_stack=call_stack,
+                modules=modules,
+                exception_info=exception_info,
                 root_cause=response.get("root_cause", ""),
                 suggestions=response.get("suggestions", []),
                 confidence=response.get("confidence", 0.0)
             )
+
+            LoggerManager.debug(f"解析后的分析报告: summary={report.summary[:50]}..., "
+                              f"crash_type={report.crash_type}, "
+                              f"call_stack_count={len(report.call_stack)}, "
+                              f"modules_count={len(report.modules)}")
 
             return report
 

@@ -25,7 +25,6 @@ function createWindow(): void {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:3000');
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
@@ -90,7 +89,7 @@ ipcMain.handle('dialog:open-file', async () => {
       return { success: false, error: '文件扩展名必须是 .dmp' };
     }
 
-    console.log(`[Electron Main] 文件已选择: ${filePath}`);
+    console.log(`[Electron Main] File selected: ${filePath}`);
 
     return {
       success: true,
@@ -99,7 +98,7 @@ ipcMain.handle('dialog:open-file', async () => {
       fileSize: stats.size
     };
   } catch (error) {
-    console.error('[Electron Main] 打开文件对话框错误:', error);
+    console.error('[Electron Main] Open file dialog error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : '未知错误'
@@ -136,10 +135,10 @@ ipcMain.handle('file:validate', async (_, filePath: string) => {
 
     const normalizedPath = path.normalize(filePath);
     if (normalizedPath !== filePath) {
-      console.warn(`[Electron Main] 路径已规范化: ${filePath} -> ${normalizedPath}`);
+      console.warn(`[Electron Main] Path normalized: ${filePath} -> ${normalizedPath}`);
     }
 
-    console.log(`[Electron Main] 文件验证成功: ${normalizedPath}`);
+    console.log(`[Electron Main] File validation successful: ${normalizedPath}`);
 
     return {
       success: true,
@@ -148,7 +147,7 @@ ipcMain.handle('file:validate', async (_, filePath: string) => {
       fileSize: stats.size
     };
   } catch (error) {
-    console.error('[Electron Main] 文件验证错误:', error);
+    console.error('[Electron Main] File validation error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : '未知错误'
@@ -169,7 +168,7 @@ ipcMain.handle('app:open-external', async (_, url: string) => {
     await shell.openExternal(url);
     return { success: true };
   } catch (error) {
-    console.error('[Electron Main] 打开外部链接错误:', error);
+    console.error('[Electron Main] Open external link error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : '未知错误'
@@ -177,8 +176,8 @@ ipcMain.handle('app:open-external', async (_, url: string) => {
   }
 });
 
-console.log('[Electron Main] AI WinDBG Electron 应用已启动');
-console.log(`[Electron Main] 开发模式: ${isDev}`);
-console.log(`[Electron Main] Electron 版本: ${process.versions.electron}`);
-console.log(`[Electron Main] Node 版本: ${process.versions.node}`);
-console.log(`[Electron Main] Chrome 版本: ${process.versions.chrome}`);
+console.log('[Electron Main] AI WinDBG Electron App Started');
+console.log(`[Electron Main] Development Mode: ${isDev}`);
+console.log(`[Electron Main] Electron Version: ${process.versions.electron}`);
+console.log(`[Electron Main] Node Version: ${process.versions.node}`);
+console.log(`[Electron Main] Chrome Version: ${process.versions.chrome}`);
