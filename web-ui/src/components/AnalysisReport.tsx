@@ -1,5 +1,5 @@
 import type { AnalysisReport, AnalysisProgress } from '../types';
-import { Card, List, Tag, Space, Typography, Empty, Alert, Button, Collapse, Table, Divider } from 'antd';
+import { Card, List, Tag, Space, Typography, Empty, Alert, Button, Table } from 'antd';
 import {
   BulbOutlined,
   ExperimentOutlined,
@@ -11,8 +11,7 @@ import {
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
 
-const { Text, Paragraph, Title } = Typography;
-const { Panel } = Collapse;
+const { Text, Paragraph } = Typography;
 
 interface AnalysisReportProps {
   report: AnalysisReport | null;

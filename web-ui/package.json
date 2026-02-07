@@ -6,7 +6,9 @@
   "main": "dist-electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "dev:electron": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"tsc -p electron/tsconfig.json && node scripts/rename-cjs.cjs && wait-on http://localhost:3000 && electron .\"",
+    "dev:electron": "node scripts/start-electron.js",
+    "dev:electron:legacy": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"tsc -p electron/tsconfig.json && node scripts/rename-cjs.cjs && wait-on http://localhost:3000 && electron .\"",
+    "cleanup": "node scripts/cleanup.js",
     "build": "tsc && vite build",
     "build:electron": "npm run build && tsc -p electron/tsconfig.json && node scripts/rename-cjs.cjs",
     "preview": "vite preview",

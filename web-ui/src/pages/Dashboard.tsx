@@ -11,16 +11,19 @@ import {
 } from '../components';
 import { sessionAPI, commandAPI, analysisAPI } from '../api';
 import { wsManager } from '../api/websocket';
-import { 
-  AnalysisReport as AnalysisReportType, 
+import {
+  AnalysisReport as AnalysisReportType,
   AnalysisProgress as AnalysisProgressType,
   AnalysisStatus
 } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { SettingOutlined } from '@ant-design/icons';
 
 const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
 
 export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState('');
   const [currentCommand, setCurrentCommand] = useState('');
@@ -173,10 +176,14 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ background: '#001529', padding: '0 24px' }}>
+      <Header style={{ background: '#001529', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Title level={3} style={{ color: '#fff', margin: '14px 0' }}>
           AI WinDBG 崩溃分析器
         </Title>
+        <SettingOutlined
+          style={{ color: '#fff', fontSize: '20px', cursor: 'pointer' }}
+          onClick={() => navigate('/llm-config')}
+        />
       </Header>
 
       <Layout>

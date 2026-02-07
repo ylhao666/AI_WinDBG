@@ -1,78 +1,50 @@
-# 应用配置
 app:
-  name: "AI WinDBG 崩溃分析器"
-  version: "0.1.0"
   debug: true
-
-# WinDBG 配置
-windbg:
-  path: "D:\\Windows Kits\\10\\Debuggers\\x64\\cdb.exe"
-  symbol_path: "SRV*C:\\Symbols*https://msdl.microsoft.com/download/symbols"
-  timeout: 120
-
-# LLM 配置
-llm:
-  # 供应商: openrouter, deepseek
-  # provider: "openrouter"
-  # model: "z-ai/glm-4.5-air:free"
-  # api_key: "${OPENROUTER_API_KEY}"
-  # base_url: "https://openrouter.ai/api/v1"
-  # site_url: "https://github.com/yourusername/ai-windbg"
-  # site_name: "AI WinDBG"
-  # max_tokens: 2000
-  # temperature: 0.3
-  # timeout: 60
-
-# DeepSeek 配置示例
-  provider: "deepseek"
-  # deepseek-chat: DeepSeek-V3.2 非思考模式
-  # deepseek-reasoner: DeepSeek-V3.2 思考模式
-  model: "deepseek-chat"
-  api_key: "${DEEPSEEK_API_KEY}"
-  base_url: "https://api.deepseek.com"
-  max_tokens: 2000
-  temperature: 0.3
-  timeout: 60
-
-# CLI 配置
-cli:
-  theme: "dark"
-  history_size: 100
-  auto_save_history: true
-  history_file: "~/.ai_windbg_history"
-
-# 显示配置
-display:
-  default_mode: "smart"
-  max_output_lines: 1000
-  enable_syntax_highlight: true
-  enable_colors: true
-
-# 缓存配置
+  name: AI WinDBG 崩溃分析器
+  version: 0.1.0
 cache:
   enabled: true
-  ttl: 3600
   max_size: 100
-
-# 日志配置
+  ttl: 3600
+cli:
+  auto_save_history: true
+  history_file: ~/.ai_windbg_history
+  history_size: 100
+  theme: dark
+display:
+  default_mode: smart
+  enable_colors: true
+  enable_syntax_highlight: true
+  max_output_lines: 1000
+llm:
+  api_key: sk-e6b2a3d2b56248988f2f8be66b821f6d
+  base_url: https://api.deepseek.com
+  max_tokens: 2000
+  model: deepseek-chat
+  provider: deepseek
+  site_name: AI WinDBG
+  site_url: https://github.com/ylhao666/AI_WinDBG
+  temperature: 0.3
+  timeout: 60
 logging:
-  level: "INFO"
-  file: "~/.ai_windbg.log"
-  max_size: 10485760
   backup_count: 5
-
-# 安全配置
+  file: ~/.ai_windbg.log
+  level: INFO
+  max_size: 10485760
 security:
-  enable_command_validation: true
   allow_dangerous_commands: false
+  enable_command_validation: true
   max_command_length: 1000
-
-# Web 界面配置
 web:
+  cors_origins:
+  - '*'
   enabled: true
-  host: "0.0.0.0"
+  host: 0.0.0.0
+  log_level: info
   port: 8000
-  cors_origins: ["*"]
-  static_files_path: "./src/web/static/frontend"
   reload: false
-  log_level: "info"
+  static_files_path: ./src/web/static/frontend
+windbg:
+  path: D:\Windows Kits\10\Debuggers\x64\cdb.exe
+  symbol_path: SRV*C:\Symbols*https://msdl.microsoft.com/download/symbols
+  timeout: 120

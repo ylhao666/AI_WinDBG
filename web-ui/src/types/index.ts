@@ -93,6 +93,23 @@ export interface Config {
   web_port: number;
 }
 
+export interface LLMConfig {
+  provider: string;
+  model: string;
+  api_key: string;
+  base_url: string | null;
+  site_url: string | null;
+  site_name: string | null;
+  max_tokens: number;
+  temperature: number;
+}
+
+export interface LLMTestResult {
+  success: boolean;
+  message: string;
+  latency?: number;
+}
+
 export interface WebSocketMessage {
   type: string;
   [key: string]: any;

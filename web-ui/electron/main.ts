@@ -5,6 +5,8 @@ import { URL } from 'url';
 
 let mainWindow: BrowserWindow | null = null;
 const isDev = process.env.NODE_ENV === 'development';
+// 从环境变量读取端口，默认 3000
+const devPort = parseInt(process.env.ELECTRON_PORT || '3000', 10);
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -24,7 +26,8 @@ function createWindow(): void {
   });
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
+    mainWindow.loadURL(`http://localhost:${devPort}`);
+    console.log(`[Electron Main] Loading from: http://localhost:${devPort}`);
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }

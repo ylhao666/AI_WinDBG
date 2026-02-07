@@ -114,17 +114,19 @@ class ConfigManager:
             return os.getenv(env_key, "")
         return api_key
 
-    def get_llm_base_url(self) -> str:
+    def get_llm_base_url(self) -> Optional[str]:
         """获取 LLM API Base URL"""
         return self.get("llm.base_url", None)
 
-    def get_llm_site_url(self) -> str:
+    def get_llm_site_url(self) -> Optional[str]:
         """获取 LLM Site URL (用于 OpenRouter 排名)"""
-        return self.get("llm.site_url", "")
+        value = self.get("llm.site_url", None)
+        return value if value else None
 
-    def get_llm_site_name(self) -> str:
+    def get_llm_site_name(self) -> Optional[str]:
         """获取 LLM Site Name (用于 OpenRouter 排名)"""
-        return self.get("llm.site_name", "")
+        value = self.get("llm.site_name", None)
+        return value if value else None
 
     def get_llm_max_tokens(self) -> int:
         """获取 LLM 最大 token 数"""
