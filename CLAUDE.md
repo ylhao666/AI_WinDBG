@@ -87,7 +87,12 @@ pytest tests/       # 运行测试
 主配置文件：`config.yaml`
 
 - **WinDBG 路径**：需配置 `windbg.path` 指向 cdb.exe
-- **LLM 配置**：支持 OpenRouter、DeepSeek 等提供商，通过环境变量设置 API Key
+- **LLM 配置**：支持 OpenAI、OpenRouter、DeepSeek 等提供商
+  - 可通过 Web 界面的 LLM 配置页面进行配置（推荐）
+  - 每个提供商独立保存 API Key，使用 localStorage 持久化
+  - 支持测试连接功能验证配置有效性
+  - 配置保存后立即生效，无需重启应用
+  - 访问路径：`http://localhost:8000/llm-config`
 - **符号路径**：支持本地和 Microsoft 符号服务器
 
 ### 开发注意事项
