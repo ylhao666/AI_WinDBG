@@ -86,6 +86,7 @@ export const Dashboard: React.FC = () => {
     };
 
     wsManager.onCommandOutput(handleCommandOutput);
+    wsManager.onNaturalLanguageOutput(handleCommandOutput);
     wsManager.onAnalysisProgress(handleAnalysisProgress);
     wsManager.onAnalysisReport(handleAnalysisReport);
     wsManager.onSessionLoaded(handleSessionLoaded);
@@ -95,6 +96,7 @@ export const Dashboard: React.FC = () => {
 
     return () => {
       wsManager.offCommandOutput(handleCommandOutput);
+      wsManager.offNaturalLanguageOutput(handleCommandOutput);
       wsManager.offAnalysisProgress(handleAnalysisProgress);
       wsManager.offAnalysisReport(handleAnalysisReport);
       wsManager.offSessionLoaded(handleSessionLoaded);
@@ -123,7 +125,7 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleExecute = async (command: string, mode: string) => {
+  const handleExecute = async (command: string, mode: string, isNatural: boolean = false) => {
     try {
       setLoading(true);
       setOutput('');
@@ -131,7 +133,9 @@ export const Dashboard: React.FC = () => {
       setAnalysisProgress(null);
       setCurrentTaskId(null);
 
-      const result = await commandAPI.execute(command, mode);
+      const result = isNatural
+        ? await commandAPI.executeNatural(command, mode)
+        : await commandAPI.execute(command, mode);
       setOutput(result.output);
       setCurrentCommand(result.command);
 

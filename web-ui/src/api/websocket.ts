@@ -103,6 +103,14 @@ class WebSocketManager {
     this.off('command_output', callback);
   }
 
+  onNaturalLanguageOutput(callback: (data: { output: string; command: string; mode: string }) => void) {
+    this.on('natural_language_output', callback);
+  }
+
+  offNaturalLanguageOutput(callback: (data: { output: string; command: string; mode: string }) => void) {
+    this.off('natural_language_output', callback);
+  }
+
   onSessionLoaded(callback: () => void) {
     this.on('session_loaded', callback);
   }

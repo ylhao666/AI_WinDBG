@@ -9,6 +9,12 @@ import { AnalysisProgress, AnalysisStatus } from '../types';
 
 const { Text } = Typography;
 
+// 稳定的进度条颜色配置
+const progressStrokeColor = {
+  '0%': '#108ee9',
+  '100%': '#87d068',
+};
+
 interface AnalysisProgressProps {
   progress: AnalysisProgress | null;
   onCancel?: () => void;
@@ -106,13 +112,10 @@ export const AnalysisProgressView: React.FC<AnalysisProgressProps> = ({
               <Tag color={getStatusColor()}>{getStatusText()}</Tag>
             </div>
             
-            <Progress 
-              percent={progress.progress} 
+            <Progress
+              percent={progress.progress}
               status={getStatusColor() as any}
-              strokeColor={{
-                '0%': '#108ee9',
-                '100%': '#87d068',
-              }}
+              strokeColor={progressStrokeColor}
             />
             
             <Text type="secondary">{progress.message}</Text>

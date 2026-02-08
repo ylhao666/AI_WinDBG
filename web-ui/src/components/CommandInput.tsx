@@ -5,7 +5,7 @@ import { SendOutlined, ThunderboltOutlined } from '@ant-design/icons';
 const { TextArea } = Input;
 
 interface CommandInputProps {
-  onExecute: (command: string, mode: string) => void;
+  onExecute: (command: string, mode: string, isNatural: boolean) => void;
   disabled?: boolean;
   loading?: boolean;
 }
@@ -25,12 +25,13 @@ export const CommandInput: React.FC<CommandInputProps> = ({
       return;
     }
 
-    onExecute(command, mode);
+    onExecute(command, mode, isNatural);
     setCommand('');
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
       handleExecute();
     }
   };
@@ -85,7 +86,7 @@ export const CommandInput: React.FC<CommandInputProps> = ({
         <TextArea
           value={command}
           onChange={(e) => setCommand(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           placeholder={
             isNatural
               ? '输入自然语言描述，例如：帮我分析崩溃'

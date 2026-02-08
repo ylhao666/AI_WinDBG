@@ -221,8 +221,10 @@ class AsyncAnalysisService:
             
             # 进度回调函数
             async def progress_callback(stage: str, message: str, data: Dict[str, Any]):
-                task.message = message
-                
+                # 在 thinking 阶段使用固定消息，不更新为实际 chunk 内容
+                if stage != "thinking":
+                    task.message = message
+
                 if stage == "checking_cache":
                     task.progress = 15
                 elif stage == "preparing":
@@ -230,7 +232,9 @@ class AsyncAnalysisService:
                 elif stage == "analyzing":
                     task.progress = 40
                 elif stage == "thinking":
-                    task.progress = min(task.progress + 1, 90)
+                    task.progress = min(task.progress +1, 90)
+                    # 使用固定消息，避免显示 LLM 实时输出
+                    task.message = "正在分析中..."
                     task.thinking_history.append({
                         "timestamp": datetime.now().isoformat(),
                         "content": data.get("chunk", "")
@@ -250,7 +254,7 @@ class AsyncAnalysisService:
                 elif stage == "error":
                     task.status = "error"
                     task.error = data.get("error", "未知错误")
-                
+
                 await self._broadcast_progress(task)
             
             # 执行流式分析
@@ -324,6 +328,7 @@ class AsyncAnalysisService:
     async def _broadcast_progress(self, task: AnalysisTask):
         """广播任务进度"""
         if self.ws_manager:
+            LoggerManager.debug(f"广播任务进度: {task.task_id}, status={task.status}, progress={task.progress}, message={task.message}")
             await self.ws_manager.broadcast_output({
                 "type": "analysis_progress",
                 "task_id": task.task_id,
