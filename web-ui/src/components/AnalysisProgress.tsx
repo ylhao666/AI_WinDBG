@@ -6,6 +6,7 @@ import {
   StopOutlined,
 } from '@ant-design/icons';
 import { AnalysisProgress, AnalysisStatus } from '../types';
+import '../styles/vscode-theme.css';
 
 const { Text } = Typography;
 
@@ -84,13 +85,14 @@ export const AnalysisProgressView: React.FC<AnalysisProgressProps> = ({
   const canCancel = isRunning || progress.status === AnalysisStatus.PENDING;
 
   return (
-    <Card 
-      title={
-        <Space>
-          {getStatusIcon()}
-          <span>智能分析进度</span>
-        </Space>
-      }
+    <div className="vscode-dark-card">
+      <Card
+        title={
+          <Space>
+            {getStatusIcon()}
+            <span>智能分析进度</span>
+          </Space>
+        }
       extra={
         canCancel && onCancel && (
           <Button 
@@ -139,5 +141,6 @@ export const AnalysisProgressView: React.FC<AnalysisProgressProps> = ({
         )}
       </Space>
     </Card>
+    </div>
   );
 };

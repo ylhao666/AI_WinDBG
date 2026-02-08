@@ -77,6 +77,24 @@ pytest tests/       # 运行测试
 - **`src/llm/analyzer.py`**：智能分析器，使用 LLM 生成崩溃分析报告
 - **`src/nlp/processor.py`**：自然语言处理，将中文命令映射到 WinDBG 命令
 
+### 前端架构
+
+前端采用 VS Code 风格布局，使用 React + TypeScript + Vite 构建。
+
+**布局组件** (`web-ui/src/components/layout/`)：
+- **`SlimHeader`**：48px 高度标题栏，显示应用名称、当前文件路径、会话状态
+- **`Sidebar`**：左侧边栏（260px），包含文件加载和命令历史
+- **`SplitPane`**：左右分屏布局容器
+- **`TerminalPanel`**：左侧面板，显示 WinDBG 原始输出
+- **`AIPanel`**：右侧面板，显示 AI 分析报告和进度
+- **`ChatInput`**：悬浮输入框，支持命令/自然语言模式切换
+
+**主题系统** (`web-ui/src/styles/vscode-theme.css`)：
+- VS Code 深色主题配色方案
+- CSS 变量定义主题颜色、间距、字体
+- Ant Design 组件深色主题适配
+- 自定义滚动条样式
+
 ### WebSocket 通信
 
 - `ws://localhost:8000/ws/output` - 实时推送命令执行输出
@@ -103,6 +121,50 @@ pytest tests/       # 运行测试
 
 3. **会话管理**：双模式运行时，CLI 和 Web 共享会话状态，修改需考虑两种模式的兼容性
 
-4. **命令执行标记**：WinDBG 命令执行使用 `DoneDoneDone` 标记检测完成，修改命令执行逻辑时需保留此机制
+4. **命令执行标记**：WinDBG 命令执行使用 `DoneDoneDone` 标记检测完成，修改命令执行逻辑时时需保留此机制
 
 5. **线程安全**：WinDBG 引擎使用 `threading.Lock` 保护共享状态，访问 `_process` 和 `_output_queue` 时需注意线程安全
+
+## VS Code 风格布局
+
+前端采用 VS Code 风格的布局设计，提供沉浸式的调试体验。
+
+### 布局结构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Header (48px 深色背景)                                 │
+│  AI WinDBG   crash.dmp   🟢 Active       [Settings]     │
+├───────┬───────────────────────────────────────────────────┤
+│       │  Main Work Area (Split Pane)                      │
+│ Load  │  ┌─────────────────┬──────────────────────────┐  │
+│ Dump  │  │  Terminal        │  AI Insight              │  │
+│       │  │  WinDBG Output   │  Analysis Report        │  │
+│ Hist: │  │  + Dark Theme    │  + Cards                │  │
+│ cmd1  │  │  + Monospace     │  + Progress             │  │
+│ cmd2  │  └─────────────────┴──────────────────────────┘  │
+│ cmd3  │                                                   │
+│ ...   │        [ Mode ▼ ]  [ Input Area  ]  [Send]        │
+│       │           Floating Chat Input (Capsule)          │
+└───────┴───────────────────────────────────────────────────┘
+```
+
+### 主题配色
+
+```css
+--vscode-bg-primary: #1e1e1e;      /* 主背景 */
+--vscode-bg-secondary: #252526;    /* 次要背景 */
+--vscode-bg-tertiary: #2d2d30;     /* 第三背景 */
+--vscode-border: #3e3e42;          /* 边框颜色 */
+--vscode-fg-primary: #cccccc;      /* 主要文字 */
+--vscode-fg-secondary: #858585;    /* 次要文字 */
+--vscode-accent: #007acc;          /* 强调色 */
+```
+
+### 组件说明
+
+- **SlimHeader**：显示应用名称、当前调试文件名（路径截断）、会话状态标签、设置按钮
+- **Sidebar**：左侧 260px 边栏，顶部为文件加载按钮，下方为紧凑的命令历史列表
+- **TerminalPanel**：左侧主面板，深色背景 `#1e1e1e`，等宽字体，简单语法高亮
+- **AIPanel**：右侧主面板，显示 AI 分析报告（卡片布局）和分析进度
+- **ChatInput**：悬浮在左侧面板底部中央的胶囊形输入框，支持模式切换（自然语言/命令模式）

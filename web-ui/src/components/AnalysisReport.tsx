@@ -10,6 +10,7 @@ import {
   FileOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
+import '../styles/vscode-theme.css';
 
 const { Text, Paragraph } = Typography;
 
@@ -28,17 +29,21 @@ export const AnalysisReportView: React.FC<AnalysisReportProps> = ({
 }) => {
   if (loading && !progress) {
     return (
-      <Card title={<span><BulbOutlined /> 智能分析</span>}>
-        <Empty description="分析中..." />
-      </Card>
+      <div className="vscode-dark-theme">
+        <Card title={<span><BulbOutlined /> 智能分析</span>}>
+          <Empty description="分析中..." />
+        </Card>
+      </div>
     );
   }
 
   if (!report && !progress) {
     return (
-      <Card title={<span><BulbOutlined /> 智能分析</span>}>
-        <Empty description="暂无分析报告" />
-      </Card>
+      <div className="vscode-dark-theme">
+        <Card title={<span><BulbOutlined /> 智能分析</span>}>
+          <Empty description="暂无分析报告" />
+        </Card>
+      </div>
     );
   }
 
@@ -118,24 +123,25 @@ export const AnalysisReportView: React.FC<AnalysisReportProps> = ({
     (report.exception_info.code || report.exception_info.description);
 
   return (
-    <Card 
-      title={
-        <Space>
-          <span><BulbOutlined /> 智能分析报告</span>
-          {onCancelAnalysis && progress && (
-            <Button 
-              danger 
-              size="small" 
-              icon={<StopOutlined />}
-              onClick={onCancelAnalysis}
-            >
-              取消
-            </Button>
-          )}
-        </Space>
-      }
-    >
-      <Space direction="vertical" style={{ width: '100%' }} size="large">
+    <div className="vscode-dark-card">
+      <Card
+        title={
+          <Space>
+            <span><BulbOutlined /> 智能分析报告</span>
+            {onCancelAnalysis && progress && (
+              <Button
+                danger
+                size="small"
+                icon={<StopOutlined />}
+                onClick={onCancelAnalysis}
+              >
+                取消
+              </Button>
+            )}
+          </Space>
+        }
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
         {/* 分析摘要 */}
         {report?.summary && (
           <Alert
@@ -288,5 +294,6 @@ export const AnalysisReportView: React.FC<AnalysisReportProps> = ({
         )}
       </Space>
     </Card>
+    </div>
   );
 };

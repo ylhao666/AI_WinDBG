@@ -1,29 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Layout, message, Space, Typography, Spin } from 'antd';
+import { message } from 'antd';
 import {
-  SessionStatus,
-  CommandInput,
-  OutputDisplay,
-  AnalysisReport,
-  AnalysisProgress,
-  CommandHistory,
-  FileUpload,
+  SlimHeader,
+  Sidebar,
+  SplitPane,
+  TerminalPanel,
+  AIPanel,
+  ChatInput,
 } from '../components';
 import { sessionAPI, commandAPI, analysisAPI } from '../api';
 import { wsManager } from '../api/websocket';
 import {
   AnalysisReport as AnalysisReportType,
   AnalysisProgress as AnalysisProgressType,
-  AnalysisStatus
+  AnalysisStatus,
+  SessionStatus as SessionStatusType
 } from '../types';
-import { useNavigate } from 'react-router-dom';
-import { SettingOutlined } from '@ant-design/icons';
-
-const { Header, Content, Sider } = Layout;
-const { Title } = Typography;
 
 export const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState('');
   const [currentCommand, setCurrentCommand] = useState('');
@@ -32,6 +26,7 @@ export const Dashboard: React.FC = () => {
   const [history, setHistory] = useState<string[]>([]);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgressType | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<SessionStatusType | null>(null);
 
   useEffect(() => {
     wsManager.connect('ws://localhost:8000/ws/output', 'output');
@@ -51,7 +46,6 @@ export const Dashboard: React.FC = () => {
         setAnalysisReport(data.result);
         setAnalyzing(false);
         setCurrentTaskId(null);
-        // 分析完成后，延迟清除进度显示，让用户能看到完成状态
         setTimeout(() => {
           setAnalysisProgress(null);
         }, 2000);
@@ -75,6 +69,7 @@ export const Dashboard: React.FC = () => {
     const handleSessionLoaded = () => {
       message.success('转储文件加载成功');
       fetchHistory();
+      fetchSessionStatus();
     };
 
     const handleSessionClosed = () => {
@@ -83,6 +78,7 @@ export const Dashboard: React.FC = () => {
       setAnalysisReport(null);
       setAnalysisProgress(null);
       setCurrentTaskId(null);
+      fetchSessionStatus();
     };
 
     wsManager.onCommandOutput(handleCommandOutput);
@@ -93,6 +89,9 @@ export const Dashboard: React.FC = () => {
     wsManager.onSessionClosed(handleSessionClosed);
 
     fetchHistory();
+    fetchSessionStatus();
+
+    const statusInterval = setInterval(fetchSessionStatus, 5000);
 
     return () => {
       wsManager.offCommandOutput(handleCommandOutput);
@@ -102,6 +101,7 @@ export const Dashboard: React.FC = () => {
       wsManager.offSessionLoaded(handleSessionLoaded);
       wsManager.offSessionClosed(handleSessionClosed);
       wsManager.disconnect();
+      clearInterval(statusInterval);
     };
   }, []);
 
@@ -111,6 +111,15 @@ export const Dashboard: React.FC = () => {
       setHistory(data.history);
     } catch (error) {
       console.error('Failed to fetch history:', error);
+    }
+  };
+
+  const fetchSessionStatus = async () => {
+    try {
+      const data = await sessionAPI.getStatus();
+      setSessionStatus(data);
+    } catch (error) {
+      console.error('Failed to fetch session status:', error);
     }
   };
 
@@ -151,10 +160,10 @@ export const Dashboard: React.FC = () => {
     try {
       setAnalyzing(true);
       setAnalysisProgress(null);
-      
+
       const response = await analysisAPI.analyzeAsync(rawOutput, command, true, true);
       setCurrentTaskId(response.task_id);
-      
+
       message.info('分析任务已创建');
     } catch (error: any) {
       console.error('Analysis failed:', error);
@@ -179,56 +188,38 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ background: '#001529', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Title level={3} style={{ color: '#fff', margin: '14px 0' }}>
-          AI WinDBG 崩溃分析器
-        </Title>
-        <SettingOutlined
-          style={{ color: '#fff', fontSize: '20px', cursor: 'pointer' }}
-          onClick={() => navigate('/llm-config')}
+    <div className="vscode-layout">
+      <SlimHeader sessionStatus={sessionStatus} />
+
+      <div className="vscode-main-workspace">
+        <Sidebar
+          history={history}
+          onLoadDump={handleLoadDump}
+          loading={loading}
+          onSelectHistory={handleSelectHistory}
         />
-      </Header>
 
-      <Layout>
-        <Sider width={300} style={{ background: '#fff', padding: '16px' }}>
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            <FileUpload onLoad={handleLoadDump} loading={loading} />
-            <CommandHistory history={history} onSelect={handleSelectHistory} />
-          </Space>
-        </Sider>
-
-        <Content style={{ padding: '24px', background: '#f0f2f5', paddingBottom: '280px' }}>
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <SessionStatus onRefresh={fetchHistory} />
-
-            {loading && (
-              <div style={{ textAlign: 'center', padding: '24px' }}>
-                <Spin size="large" />
-              </div>
-            )}
-
-            <OutputDisplay output={output} command={currentCommand} />
-            
-            {analysisProgress && (
-              <AnalysisProgress 
-                progress={analysisProgress} 
-                onCancel={handleCancelAnalysis}
+        <SplitPane
+          left={
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+              <TerminalPanel output={output} command={currentCommand} />
+              <ChatInput
+                onExecute={handleExecute}
+                disabled={loading}
+                loading={loading}
               />
-            )}
-            
-            {/* 始终显示分析报告，即使在分析中也可以显示之前的报告 */}
-            <AnalysisReport 
-              report={analysisReport} 
-              loading={analyzing && !analysisReport}
+            </div>
+          }
+          right={
+            <AIPanel
+              report={analysisReport}
               progress={analysisProgress}
+              analyzing={analyzing}
               onCancelAnalysis={handleCancelAnalysis}
             />
-          </Space>
-        </Content>
-      </Layout>
-
-      <CommandInput onExecute={handleExecute} disabled={loading} loading={loading} />
-    </Layout>
+          }
+        />
+      </div>
+    </div>
   );
 };

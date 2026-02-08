@@ -1,3 +1,6 @@
+/* VS Code 主题 */
+@import './styles/vscode-theme.css';
+
 * {
   margin: 0;
   padding: 0;
